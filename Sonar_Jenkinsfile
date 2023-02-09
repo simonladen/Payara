@@ -1,37 +1,38 @@
 #!groovy
-@Library('PayaraTestLibrary') _ 
+@Library('PayaraTestLibrary') _
+
 pipeline {
-  agent none
-  stages {
-    stage('Checkout') {
-      agent {
-        label 'ubuntu'
-      }
-      steps {
-        checkout scm
-      }
-    }
-    stage ('Build and Analysis') {
-      agent {
-        label 'ubuntu'
-      }
-      steps {
-        withMaven(jdk: 'zulu-11', publisherStrategy: 'EXPLICIT') {
-          withSonarQubeEnv(installationName: 'Payara-Testone', credentialsId: 'sladen-sonar') {
-            sh "mvn clean install -DskipTests -PQuickBuild sonar:sonar -Dsonar.projectKey=sladen -Dsonar.projectName=sladen"
-          }
-        }
-      }
-    }
-    stage ('Quality Gate') {
-      agent {
-        label 'ubuntu'
-      }
-      steps {
-        timeout(time: 1, unit: 'HOURS') {
-          waitForQualityGate abortPipeline: true, credentialsId: 'sladen-sonar'
-        }
-      }
-    }
-  }
+  agent none
+  stages {
+    stage('Checkout') {
+      agent {
+        label 'ubuntu'
+      }
+      steps {
+        checkout scm
+      }
+    }
+    stage ('Build and Analysis') {
+      agent {
+        label 'ubuntu'
+      }
+      steps {
+        withMaven(jdk: 'zulu-11', publisherStrategy: 'EXPLICIT') {
+          withSonarQubeEnv(installationName: 'Payara-Testone', credentialsId: 'sladen-sonar') {
+            sh "mvn clean install -DskipTests -PQuickBuild sonar:sonar -Dsonar.projectKey=sladen -Dsonar.projectName=sladen"
+          }
+        }
+      }
+    }
+    stage ('Quality Gate') {
+      agent {
+        label 'ubuntu'
+      }
+      steps {
+        timeout(time: 1, unit: 'HOURS') {
+          waitForQualityGate abortPipeline: true, credentialsId: 'sladen-sonar'
+        }
+      }
+    }
+  }
 }
