@@ -8,6 +8,7 @@ import org.jboss.arquillian.container.test.api.RunAsClient;
 import fish.payara.samples.PayaraArquillianTestRunner;
 import fish.payara.samples.PayaraTestShrinkWrap;
 import fish.payara.samples.NotMicroCompatible;
+import java.nio.file.Paths;
 
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import java.sql.Timestamp;
@@ -23,6 +24,7 @@ import org.junit.runner.RunWith;
 public class CleanBootIT {
 
     static private Page page;
+    static private BrowserContext context;
 
     @Deployment(testable = false)
     public static WebArchive createDeployment() {
@@ -35,13 +37,22 @@ public class CleanBootIT {
         //Load the Admin Console
         Playwright playwright = Playwright.create();
         Browser browser = playwright.chromium().launch();
-        page = browser.newPage();
+        context = browser.newContext();
+        //start tracing
+        context.tracing().start(new Tracing.StartOptions()
+        .setScreenshots(true)
+        .setSnapshots(true)
+        .setSources(true));
+        
+        page = context.newPage();
         page.navigate("http://localhost:4848/");
         page.waitForSelector("table[role='presentation']", new Page.WaitForSelectorOptions().setTimeout(120000));
     }
 
     @AfterClass
     static public void closePage() {
+        context.tracing().stop(new Tracing.StopOptions()
+        .setPath(Paths.get("trace.zip")));
         page.close();
     }
 
