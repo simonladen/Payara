@@ -47,8 +47,8 @@ import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.util.GlobalTracer;
 import java.net.URI;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -59,14 +59,14 @@ import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.test.api.ArquillianResource;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Test that verifies the automatic propagation of baggage items across process boundaries when using Remote EJBs.
  *
  * @author Andrew Pielage <andrew.pielage@payara.fish>
  */
-@RunWith(PayaraArquillianTestRunner.class)
+@ExtendWith(PayaraArquillianTestRunner.class)
 @RunAsClient
 @NotMicroCompatible
 public class RemoteEjbClientIT {
@@ -92,24 +92,24 @@ public class RemoteEjbClientIT {
         try (Scope scope = tracer.activateSpan(span)) {
             span.setBaggageItem("Wibbles", "Wobbles");
             String baggageItems = ejb.annotatedMethod();
-            Assert.assertTrue("Baggage items didn't match, received: " + baggageItems,
+            Assertions.assertTrue("Baggage items didn't match, received: " + baggageItems,
                     baggageItems.contains("\nWibbles : Wobbles\n"));
 
             span.setBaggageItem("Nibbles", "Nobbles");
             baggageItems = ejb.nonAnnotatedMethod();
-            Assert.assertTrue("Baggage items didn't match, received: " + baggageItems,
+            Assertions.assertTrue("Baggage items didn't match, received: " + baggageItems,
                     baggageItems.contains("Wibbles : Wobbles")
                     && baggageItems.contains("Nibbles : Nobbles"));
 
             span.setBaggageItem("Bibbles", "Bobbles");
             baggageItems = ejb.shouldNotBeTraced();
-            Assert.assertTrue("Baggage items didn't match, received: " + baggageItems,
+            Assertions.assertTrue("Baggage items didn't match, received: " + baggageItems,
                     baggageItems.contains("Wibbles : Wobbles")
                     && baggageItems.contains("Nibbles : Nobbles")
                     && baggageItems.contains("Bibbles : Bobbles"));
 
             baggageItems = ejb.editBaggageItems();
-            Assert.assertTrue("Baggage items didn't match, received: " + baggageItems,
+            Assertions.assertTrue("Baggage items didn't match, received: " + baggageItems,
                     baggageItems.contains("Wibbles : Wabbles")
                     && baggageItems.contains("Nibbles : Nabbles")
                     && baggageItems.contains("Bibbles : Babbles"));
@@ -135,7 +135,7 @@ public class RemoteEjbClientIT {
         Span span = tracer.buildSpan("ExecuteEjb").start();
         try(Scope scope = tracer.activateSpan(span)) {
             String baggageItems = ejb.annotatedMethod();
-            Assert.assertTrue("Baggage items didn't contain transaction ID, received: " + baggageItems,
+            Assertions.assertTrue("Baggage items didn't contain transaction ID, received: " + baggageItems,
                     baggageItems.contains("TX-ID"));
         } finally {
             span.finish();
