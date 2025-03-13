@@ -1,14 +1,14 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) 2020 Payara Foundation and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020-2023 Payara Foundation and/or its affiliates. All rights reserved.
  *
  * The contents of this file are subject to the terms of either the GNU
  * General Public License Version 2 only ("GPL") or the Common Development
  * and Distribution License("CDDL") (collectively, the "License").  You
  * may not use this file except in compliance with the License.  You can
  * obtain a copy of the License at
- * https://github.com/payara/Payara/blob/master/LICENSE.txt
+ * https://github.com/payara/Payara/blob/main/LICENSE.txt
  * See the License for the specific
  * language governing permissions and limitations under the License.
  *
@@ -41,35 +41,36 @@ package fish.payara.microprofile.metrics.writer;
 
 import static fish.payara.microprofile.metrics.MetricUnitsUtils.scaleToBaseUnit;
 
+import fish.payara.microprofile.metrics.impl.HistogramImpl;
+import fish.payara.microprofile.metrics.impl.TimerImpl;
+import fish.payara.microprofile.metrics.impl.WeightedSnapshot;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
-import org.eclipse.microprofile.metrics.ConcurrentGauge;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.eclipse.microprofile.metrics.Counter;
 import org.eclipse.microprofile.metrics.Gauge;
 import org.eclipse.microprofile.metrics.Histogram;
 import org.eclipse.microprofile.metrics.Metadata;
-import org.eclipse.microprofile.metrics.Meter;
-import org.eclipse.microprofile.metrics.Metered;
 import org.eclipse.microprofile.metrics.Metric;
 import org.eclipse.microprofile.metrics.MetricID;
 import org.eclipse.microprofile.metrics.MetricUnits;
 import org.eclipse.microprofile.metrics.Sampling;
-import org.eclipse.microprofile.metrics.SimpleTimer;
 import org.eclipse.microprofile.metrics.Snapshot;
 import org.eclipse.microprofile.metrics.Tag;
 import org.eclipse.microprofile.metrics.Timer;
-
-import org.eclipse.microprofile.metrics.MetricRegistry.Type;
 
 /**
  * Writes {@link Metric}s according to the OpenMetrics standard as defined in <a href=
@@ -85,20 +86,25 @@ import org.eclipse.microprofile.metrics.MetricRegistry.Type;
 public class OpenMetricsExporter implements MetricExporter {
 
     protected enum OpenMetricsType {
-        counter, gauge, summary
+        counter, gauge, summary, histogram
     }
 
-    protected final Type scope;
+    protected final String scope;
+
     protected final PrintWriter out;
     protected final Set<String> typeWrittenByGlobalName;
     protected final Set<String> helpWrittenByGlobalName;
+    
+    private static final String GC_TOTAL_ID = "gc_total";
+    
+    private static final String GC_TIME_SECONDS_TOTAL_ID = "gc_time_seconds_total";
 
     public OpenMetricsExporter(Writer out) {
         this(null, out instanceof PrintWriter ? (PrintWriter) out : new PrintWriter(out), new HashSet<>(), new HashSet<>());
     }
 
-    protected OpenMetricsExporter(Type scope, PrintWriter out, Set<String> typeWrittenByGlobalName,
-            Set<String> helpWrittenByGlobalName) {
+    protected OpenMetricsExporter(String scope, PrintWriter out, Set<String> typeWrittenByGlobalName,
+                                  Set<String> helpWrittenByGlobalName) {
         this.scope = scope;
         this.out = out;
         this.typeWrittenByGlobalName = typeWrittenByGlobalName;
@@ -106,7 +112,7 @@ public class OpenMetricsExporter implements MetricExporter {
     }
 
     @Override
-    public MetricExporter in(Type scope, boolean asNode) {
+    public MetricExporter in(String scope, boolean asNode) {
         return new OpenMetricsExporter(scope, out, typeWrittenByGlobalName, helpWrittenByGlobalName);
     }
 
@@ -117,25 +123,10 @@ public class OpenMetricsExporter implements MetricExporter {
 
     @Override
     public void export(MetricID metricID, Counter counter, Metadata metadata) {
-        String total = globalName(metricID, "_total");
+        String total = globalName(metricID, metadata, "_total");
         appendTYPE(total, OpenMetricsType.counter);
         appendHELP(total, metadata);
-        appendValue(total, metricID.getTagsAsArray(), counter.getCount());
-    }
-
-    @Override
-    public void export(MetricID metricID, ConcurrentGauge gauge, Metadata metadata) {
-        Tag[] tags = metricID.getTagsAsArray();
-        String current = globalName(metricID, "_current");
-        appendTYPE(current, OpenMetricsType.gauge);
-        appendHELP(current, metadata);
-        appendValue(current, tags, gauge.getCount());
-        String min = globalName(metricID, "_min");
-        appendTYPE(min, OpenMetricsType.gauge);
-        appendValue(min, tags, gauge.getMin());
-        String max = globalName(metricID, "_max");
-        appendTYPE(max, OpenMetricsType.gauge);
-        appendValue(max, tags, gauge.getMax());
+        appendValue(total, metricID.getTagsAsArray(), scaleToBaseUnit((double)counter.getCount(), metadata));
     }
 
     @Override
@@ -166,109 +157,158 @@ public class OpenMetricsExporter implements MetricExporter {
     private void exportSampling(MetricID metricID, Sampling sampling, LongSupplier count, Supplier<Number> sum, Metadata metadata) {
         Tag[] tags = metricID.getTagsAsArray();
         Snapshot snapshot = sampling.getSnapshot();
-        String mean = globalName(metricID, "_mean", metadata);
+        String mean = globalName(metricID, metadata, "_mean");
         appendTYPE(mean, OpenMetricsType.gauge);
         appendValue(mean, tags, scaleToBaseUnit(snapshot.getMean(), metadata));
-        String max = globalName(metricID, "_max", metadata);
+        String max = globalName(metricID, metadata, "_max");
         appendTYPE(max, OpenMetricsType.gauge);
+        appendHELP(max, metadata);
         appendValue(max, tags, scaleToBaseUnit(snapshot.getMax(), metadata));
-        String min = globalName(metricID, "_min", metadata);
-        appendTYPE(min, OpenMetricsType.gauge);
-        appendValue(min, tags, scaleToBaseUnit(snapshot.getMin(), metadata));
-        String stddev = globalName(metricID, "_stddev", metadata);
-        appendTYPE(stddev, OpenMetricsType.gauge);
-        appendValue(stddev, tags, scaleToBaseUnit(snapshot.getStdDev(), metadata));
+
         String summary = globalName(metricID, metadata);
-        appendTYPE(summary, OpenMetricsType.summary);
         appendHELP(summary, metadata);
-        appendValue(globalName(metricID, metadata, "_count"), tags, count.getAsLong());
-        appendValue(globalName(metricID, metadata, "_sum"), tags, sum.get());
-        appendValue(summary, tags("quantile", "0.5", tags), scaleToBaseUnit(snapshot.getMedian(), metadata));
-        appendValue(summary, tags("quantile", "0.75", tags), scaleToBaseUnit(snapshot.get75thPercentile(), metadata));
-        appendValue(summary, tags("quantile", "0.95", tags), scaleToBaseUnit(snapshot.get95thPercentile(), metadata));
-        appendValue(summary, tags("quantile", "0.98", tags), scaleToBaseUnit(snapshot.get98thPercentile(), metadata));
-        appendValue(summary, tags("quantile", "0.99", tags), scaleToBaseUnit(snapshot.get99thPercentile(), metadata));
-        appendValue(summary, tags("quantile", "0.999", tags), scaleToBaseUnit(snapshot.get999thPercentile(), metadata));
+        Snapshot.PercentileValue[] percentileValues = snapshot.percentileValues();
+        if (snapshot instanceof WeightedSnapshot) {
+            WeightedSnapshot w = (WeightedSnapshot) snapshot;
+            if (w.getConfigAdapter() != null) {
+                if (w.bucketValues() != null && w.bucketValues().length > 0) {
+                    appendTYPE(summary, OpenMetricsType.histogram);
+                    printCustomPercentile(percentileValues, summary, tags, metadata);
+                    printBuckets(snapshot.bucketValues(), globalName(metricID, metadata, "_bucket"),
+                                tags, metadata, sampling, count);
+                } else {
+                    appendTYPE(summary, OpenMetricsType.summary);
+                    printCustomPercentile(percentileValues, summary, tags, metadata);
+                }
+            } else {
+                appendTYPE(summary, OpenMetricsType.summary);
+                printMedian(percentileValues, summary, tags, metadata);
+            }
+        } else {
+            appendTYPE(summary, OpenMetricsType.summary);
+            printMedian(percentileValues, summary, tags, metadata);
+        }
+
+        appendValue(globalName(metricID, metadata, "_count"), tags, ((double) count.getAsLong()));
+        appendValue(globalName(metricID, metadata, "_sum"), tags, (sum.get()).doubleValue());
     }
 
-    @Override
-    public void export(MetricID metricID, Meter meter, Metadata metadata) {
-        Tag[] tags = metricID.getTagsAsArray();
-        String total = globalName(metricID, "_total");
-        appendTYPE(total, OpenMetricsType.counter);
-        appendHELP(total, metadata);
-        appendValue(total, tags, meter.getCount());
-        exportMetered(metricID, meter);
+    public void printCustomPercentile(Snapshot.PercentileValue[] pencentileValues, String summary, Tag[] tags, Metadata metadata) {
+        for (Snapshot.PercentileValue value : pencentileValues) {
+            appendValue(summary, tags("quantile", Double.toString(value.getPercentile()), tags), value.getValue());
+        }
     }
 
-    private void exportMetered(MetricID metricID, Metered metered) {
-        Tag[] tags = metricID.getTagsAsArray();
-        String rate = globalName(metricID, "_rate_per_second");
-        appendTYPE(rate, OpenMetricsType.gauge);
-        appendValue(rate, tags, metered.getMeanRate());
-        String oneMinRate = globalName(metricID, "_one_min_rate_per_second");
-        appendTYPE(oneMinRate, OpenMetricsType.gauge);
-        appendValue(oneMinRate, tags, metered.getOneMinuteRate());
-        String fiveMinRate = globalName(metricID, "_five_min_rate_per_second");
-        appendTYPE(fiveMinRate, OpenMetricsType.gauge);
-        appendValue(fiveMinRate, tags, metered.getFiveMinuteRate());
-        String fifteenMinRate = globalName(metricID, "_fifteen_min_rate_per_second");
-        appendTYPE(fifteenMinRate, OpenMetricsType.gauge);
-        appendValue(fifteenMinRate, tags, metered.getFifteenMinuteRate());
+    public void printBuckets(Snapshot.HistogramBucket[] buckets, String summary, Tag[] tags, Metadata metadata,
+                             Sampling sampling, LongSupplier count) {
+        if (sampling != null && sampling instanceof HistogramImpl) {
+            for (Snapshot.HistogramBucket b : buckets) {
+                appendValue(summary, tags("le", Double.toString(b.getBucket()), tags), ((double) evaluateBucketCount(b.getBucket(), sampling)));
+            }
+        } else {
+            List<Long> bucketsList = Stream.of(buckets)
+                    .map(bucket -> TimeUnit.MILLISECONDS.convert((long) bucket.getBucket(), TimeUnit.NANOSECONDS))
+                    .collect(Collectors.toList());
+
+            for (long b : bucketsList) {
+                double seconds = b / 1000.0;
+                appendValue(summary, tags("le", Double.toString(seconds), tags), ((double) evaluateBucketCount(seconds, sampling)));
+            }
+        }
+        appendValue(summary, tags("le", "+Inf", tags), ((double) count.getAsLong()));
     }
 
-    @Override
-    public void export(MetricID metricID, SimpleTimer timer, Metadata metadata) {
-        Tag[] tags = metricID.getTagsAsArray();
-        String total = globalName(metricID, "_total");
-        appendTYPE(total, OpenMetricsType.counter);
-        appendHELP(total, metadata);
-        appendValue(total, tags, timer.getCount());
-        String elapsedTime = globalName(metricID, "_elapsedTime_seconds");
-        appendTYPE(elapsedTime, OpenMetricsType.gauge);
-        appendValue(elapsedTime, tags, toSeconds(timer.getElapsedTime()));
-        String maxTime = globalName(metricID, "_maxTimeDuration_seconds");
-        appendTYPE(maxTime, OpenMetricsType.gauge);
-        appendValue(maxTime, tags, toSeconds(timer.getMaxTimeDuration()));
-        String minTime = globalName(metricID, "_minTimeDuration_seconds");
-        appendTYPE(minTime, OpenMetricsType.gauge);
-        appendValue(minTime, tags, toSeconds(timer.getMinTimeDuration()));
+    public long evaluateBucketCount(double bucket, Sampling sampling) {
+        Snapshot snapshot = sampling.getSnapshot();
+        if (snapshot instanceof WeightedSnapshot) {
+            WeightedSnapshot weightedSnapshot = (WeightedSnapshot) snapshot;
+            double[] conversionArray = null;
+            long[] values = weightedSnapshot.getValues();
+            if (sampling instanceof TimerImpl) {
+                conversionArray = Arrays.stream(values).mapToDouble(l -> l / 1000000000D).toArray();
+            } else {
+                conversionArray = Arrays.stream(values).mapToDouble(l -> Long.valueOf(l).doubleValue()).toArray();
+            }
+            return Arrays.stream(conversionArray).filter(s -> s <= bucket).count();
+        }
+        return 0L;
+    }
+    
+    public void printMedian(Snapshot.PercentileValue[] pencentileValues, String summary, Tag[] tags, Metadata metadata) {
+        Optional<Snapshot.PercentileValue> median = Arrays.stream(pencentileValues)
+                .filter(p -> p.getPercentile() == 0.5).findFirst();
+        Optional<Snapshot.PercentileValue> percentile75th = Arrays.stream(pencentileValues)
+                .filter(p -> p.getPercentile() == 0.75).findFirst();
+        Optional<Snapshot.PercentileValue> percentile95th = Arrays.stream(pencentileValues)
+                .filter(p -> p.getPercentile() == 0.95).findFirst();
+        Optional<Snapshot.PercentileValue> percentile98th = Arrays.stream(pencentileValues)
+                .filter(p -> p.getPercentile() == 0.98).findFirst();
+        Optional<Snapshot.PercentileValue> percentile99th = Arrays.stream(pencentileValues)
+                .filter(p -> p.getPercentile() == 0.99).findFirst();
+        Optional<Snapshot.PercentileValue> percentile999th = Arrays.stream(pencentileValues)
+                .filter(p -> p.getPercentile() == 0.999).findFirst();
+
+        if(median.isPresent()) {
+            appendValue(summary, tags("quantile", "0.5", tags),
+                    scaleToBaseUnit(median.get().getValue(), metadata));
+        }
+
+        if(percentile75th.isPresent()) {
+            appendValue(summary, tags("quantile", "0.75", tags),
+                    scaleToBaseUnit(percentile75th.get().getValue(), metadata));
+        }
+
+        if(percentile95th.isPresent()) {
+            appendValue(summary, tags("quantile", "0.95", tags),
+                    scaleToBaseUnit(percentile95th.get().getValue(), metadata));
+        }
+
+        if(percentile98th.isPresent()) {
+            appendValue(summary, tags("quantile", "0.98", tags),
+                    scaleToBaseUnit(percentile98th.get().getValue(), metadata));
+        }
+
+        if(percentile99th.isPresent()) {
+            appendValue(summary, tags("quantile", "0.99", tags),
+                    scaleToBaseUnit(percentile99th.get().getValue(), metadata));
+        }
+
+        if(percentile999th.isPresent()) {
+            appendValue(summary, tags("quantile", "0.999", tags),
+                    scaleToBaseUnit(percentile999th.get().getValue(), metadata));
+        }
     }
 
     @Override
     public void export(MetricID metricID, Timer timer, Metadata metadata) {
-        exportMetered(metricID, timer);
         exportSampling(metricID, timer, timer::getCount, () -> toSeconds(timer.getElapsedTime()), metadata);
     }
 
     protected void appendTYPE(String globalName, OpenMetricsType type) {
-        if (typeWrittenByGlobalName.contains(globalName)) {
+        if (!typeWrittenByGlobalName.add(globalName)) {
+            // write metadata only once per metric
             return;
         }
-        typeWrittenByGlobalName.add(globalName);
         out.append("# TYPE ").append(globalName).append(' ').append(type.name()).append('\n');
     }
 
     protected void appendHELP(String globalName, Metadata metadata) {
-        if (helpWrittenByGlobalName.contains(globalName)) {
-            return;
+        if (!helpWrittenByGlobalName.add(globalName)) {
+            // write metadata only once per metric
+           return;
         }
-        helpWrittenByGlobalName.add(globalName);
         Optional<String> description = metadata.description();
-        if (!description.isPresent()) {
-            return;
-        }
-        String text = description.get();
-        if (text.isEmpty()) {
-            return;
-        }
-        out.append("# HELP ").append(globalName).append(' ').append(text).append('\n');
+        out.append("# HELP ").append(globalName).append(' ').append(description.isPresent() ? description.get(): "").append('\n');
     }
 
     protected void appendValue(String globalName, Tag[] tags, Number value) {
         out.append(globalName);
         out.append(tagsToString(tags));
-        out.append(' ').append(value == null ? "NaN" : roundValue(value)).append('\n');
+        if(globalName.equals(GC_TOTAL_ID) || globalName.equals(GC_TIME_SECONDS_TOTAL_ID)) {
+            out.append(' ').append(value.toString()).append('\n');
+        } else {
+            out.append(' ').append(value == null ? "NaN" : roundValue(value)).append('\n');
+        }
     }
 
     private void appendValue(String globalName, Tag[] tags, long value) {
@@ -281,9 +321,6 @@ public class OpenMetricsExporter implements MetricExporter {
 
     protected String roundValue(Number value) {
         String valString = value.toString();
-        if (valString.endsWith(".0")) {
-            valString = valString.substring(0, valString.length() - 2); // avoid decimal NNN.0 => NNN
-        }
         if (valString.endsWith("000000001")) {
             valString = valString.substring(0, valString.length() - 9); // cut off double representation error
         }
@@ -343,12 +380,10 @@ public class OpenMetricsExporter implements MetricExporter {
         case MetricUnits.KILOBITS:
         case MetricUnits.MEGABITS:
         case MetricUnits.GIGABITS:
-        case MetricUnits.KIBIBITS:
         case MetricUnits.MEBIBITS:
         case MetricUnits.GIBIBITS:
         case MetricUnits.KILOBYTES:
         case MetricUnits.MEGABYTES:
-        case MetricUnits.GIGABYTES:
             return globalName(metricID, infix + "_bytes" + suffix);
         case MetricUnits.PERCENT:
             return globalName(metricID, infix + "_ratio" + suffix);
@@ -356,6 +391,8 @@ public class OpenMetricsExporter implements MetricExporter {
             return globalName(metricID, infix + "_per_second" + suffix);
         case MetricUnits.NONE:
             return globalName(metricID, infix + suffix);
+        case MetricUnits.KIBIBITS:
+        case MetricUnits.GIGABYTES:
         default:
             return globalName(metricID, infix + "_" + unit + suffix);
         }
@@ -363,9 +400,9 @@ public class OpenMetricsExporter implements MetricExporter {
 
     private String globalName(MetricID metricID, String suffix) {
         String name = metricID.getName();
-        return sanitizeMetricName(!suffix.isEmpty() && name.endsWith(suffix)
-                ? scope.getName() + '_' + name
-                : scope.getName() + '_' + name + suffix);
+        return sanitizeMetricName(!suffix.isEmpty() && (name.endsWith(suffix) || name.contains(".total"))
+                ? name
+                : name + suffix);
     }
 
     private static CharSequence escapeTagValue(String name) {

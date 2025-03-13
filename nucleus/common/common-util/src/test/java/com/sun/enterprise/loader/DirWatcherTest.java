@@ -8,7 +8,7 @@
  *    and Distribution License("CDDL") (collectively, the "License").  You
  *    may not use this file except in compliance with the License.  You can
  *    obtain a copy of the License at
- *    https://github.com/payara/Payara/blob/master/LICENSE.txt
+ *    https://github.com/payara/Payara/blob/main/LICENSE.txt
  *    See the License for the specific
  *    language governing permissions and limitations under the License.
  *
@@ -149,7 +149,7 @@ public class DirWatcherTest {
     }
 
     static void assertTrue(String message, Supplier<Boolean> test) {
-        for(int i=0; i<5; i++) { // watch service takes some time to react, so let's make few attempts before giving up
+        for(int i=0; i<1000; i++) { // watch service takes some time to react, so let's make few attempts before giving up
             Boolean result = test.get();
             if (result) {
                 return;

@@ -1,14 +1,14 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) [2018-2022] Payara Foundation and/or its affiliates. All rights reserved.
+ * Copyright (c) [2018-2023] Payara Foundation and/or its affiliates. All rights reserved.
  *
  * The contents of this file are subject to the terms of either the GNU
  * General Public License Version 2 only ("GPL") or the Common Development
  * and Distribution License("CDDL") (collectively, the "License").  You
  * may not use this file except in compliance with the License.  You can
  * obtain a copy of the License at
- * https://github.com/payara/Payara/blob/master/LICENSE.txt
+ * https://github.com/payara/Payara/blob/main/LICENSE.txt
  * See the License for the specific
  * language governing permissions and limitations under the License.
  *
@@ -49,11 +49,13 @@ import static fish.payara.microprofile.openapi.impl.model.util.ModelUtils.create
 import static fish.payara.microprofile.openapi.impl.model.util.ModelUtils.extractAnnotations;
 import static fish.payara.microprofile.openapi.impl.model.util.ModelUtils.mergeProperty;
 import static fish.payara.microprofile.openapi.impl.model.util.ModelUtils.readOnlyView;
+
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Set;
+
 import org.eclipse.microprofile.openapi.models.Components;
 import org.eclipse.microprofile.openapi.models.ExternalDocumentation;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
@@ -76,7 +78,7 @@ public class OpenAPIImpl extends ExtensibleImpl<OpenAPI> implements OpenAPI, Clo
     protected Paths paths = new PathsImpl();
     protected Map<String, Set<String>> endpoints = createOrderedMap();
     protected Components components = new ComponentsImpl();
-    
+
     private ApiContext context;
 
     public static OpenAPI createInstance(AnnotationModel annotation, ApiContext context) {
@@ -91,15 +93,17 @@ public class OpenAPIImpl extends ExtensibleImpl<OpenAPI> implements OpenAPI, Clo
             from.setExternalDocs(ExternalDocumentationImpl.createInstance(externalDocs));
         }
         extractAnnotations(annotation, context, "security", SecurityRequirementImpl::createInstance, from::addSecurityRequirement);
+        extractAnnotations(annotation, context, "securitySets", SecurityRequirementImpl::createInstances, from::addSecurityRequirement);
         extractAnnotations(annotation, context, "servers", ServerImpl::createInstance, from::addServer);
         extractAnnotations(annotation, context, "tags", TagImpl::createInstance, from::addTag);
         AnnotationModel components = annotation.getValue("components", AnnotationModel.class);
         if (components != null) {
             from.setComponents(ComponentsImpl.createInstance(components, context));
         }
+        from.setExtensions(parseExtensions(annotation));
         return from;
     }
-    
+
     public final ApiContext getContext() {
         return context;
     }
@@ -290,6 +294,7 @@ public class OpenAPIImpl extends ExtensibleImpl<OpenAPI> implements OpenAPI, Clo
             }
             ExternalDocumentationImpl.merge(from.getExternalDocs(), to.getExternalDocs(), override);
         }
+        ExtensibleImpl.merge(from, to, override);
         // Handle @SecurityRequirement
         if (from.getSecurity() != null) {
             for (SecurityRequirement requirement : from.getSecurity()) {
@@ -341,6 +346,7 @@ public class OpenAPIImpl extends ExtensibleImpl<OpenAPI> implements OpenAPI, Clo
         clonedObj.setTags(new ArrayList<>(this.tags));
         clonedObj.setPaths(new PathsImpl(this.paths.getPathItems()));
         clonedObj.setComponents(this.components);
+        clonedObj.setExtensions(this.extensions);
         ((OpenAPIImpl) clonedObj).setEndpoints(new TreeMap<>(this.getEndpoints()));
         return clonedObj;
     }

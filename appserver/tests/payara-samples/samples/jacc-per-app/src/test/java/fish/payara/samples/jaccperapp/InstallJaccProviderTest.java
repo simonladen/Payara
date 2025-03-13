@@ -8,7 +8,7 @@
  * and Distribution License("CDDL") (collectively, the "License").  You
  * may not use this file except in compliance with the License.  You can
  * obtain a copy of the License at
- * https://github.com/payara/Payara/blob/master/LICENSE.txt
+ * https://github.com/payara/Payara/blob/main/LICENSE.txt
  * See the License for the specific
  * language governing permissions and limitations under the License.
  *
@@ -83,7 +83,7 @@ public class InstallJaccProviderTest {
         assertNotNull("System property pomPath", pomPath);
         MavenResolvedArtifact jaccLibrary = Maven.resolver()
              .loadPomFromFile(pomPath)
-             .resolve("org.omnifaces:jacc-provider-repackaged:jar:jakartaee9:0.3")
+             .resolve("fish.payara.server.internal.tests:jacc-provider-repackaged:jar:jakartaee9:" + System.getProperty("payara.version"))
              .withTransitivity()
              .asSingleResolvedArtifact();
         WebArchive archive =

@@ -8,7 +8,7 @@
  *    and Distribution License("CDDL") (collectively, the "License").  You
  *    may not use this file except in compliance with the License.  You can
  *    obtain a copy of the License at
- *    https://github.com/payara/Payara/blob/master/LICENSE.txt
+ *    https://github.com/payara/Payara/blob/main/LICENSE.txt
  *    See the License for the specific
  *    language governing permissions and limitations under the License.
  *
@@ -74,13 +74,7 @@ public class AcceptContentTypeTest {
     @Test
     public void withoutPreference() {
         assertEquals(Optional.of("text/plain"),
-                parseMetricsAcceptHeader("application/json, text/plain"));
-    }
-
-    @Test
-    public void withDefaultPreference() {
-        assertEquals(Optional.of("application/json"),
-                parseMetricsAcceptHeader("text/plain;q=0.5, application/json"));
+                parseMetricsAcceptHeader("text/plain"));
     }
 
     @Test

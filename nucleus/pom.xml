@@ -40,8 +40,7 @@
     holder.
 
 -->
-<!-- Portions Copyright 2016-2022 Payara Foundation and/or its affiliates -->
-
+<!-- Portions Copyright 2016-2024 Payara Foundation and/or its affiliates -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
@@ -49,7 +48,7 @@
     <parent>
         <groupId>fish.payara.server</groupId>
         <artifactId>payara-aggregator</artifactId>
-        <version>6.2023.2-SNAPSHOT</version>
+        <version>6.2025.4-SNAPSHOT</version>
     </parent>
 
     <artifactId>payara-nucleus-parent</artifactId>
@@ -57,16 +56,6 @@
     <name>Payara Nucleus Parent Project</name>
 
     <repositories>
-        <!-- Try Maven central first, not last, which happens when omitted here -->
-        <repository>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <id>central</id>
-            <name>Central Repository</name>
-            <url>https://repo.maven.apache.org/maven2</url>
-        </repository>
-
         <repository>
             <id>eclipse.microprofile</id>
             <name>Eclipse MicroProfile Repository</name>
@@ -85,7 +74,7 @@
     <pluginRepositories>
         <pluginRepository>
             <id>payara-nexus-artifacts</id>
-            <url>https://nexus.payara.fish/repository/payara-artifacts</url>
+            <url>https://nexus.dev.payara.fish/repository/payara-artifacts</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
@@ -98,58 +87,33 @@
     <properties>
         <!-- on Hudson and RE, ${build.number} gets replaced by real build ID -->
         <build.id>${build.number}</build.id>
-        <jdk.version>11</jdk.version>
-        <javadoc.skip>false</javadoc.skip>
-
-        <maven.assembly.plugin.version>3.4.2</maven.assembly.plugin.version>
-        <maven.remote.resources.plugin.version>1.7.0</maven.remote.resources.plugin.version>
-        <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
         <maven.eclipse.plugin.version>2.10</maven.eclipse.plugin.version>
-        <maven.invoker.plugin.version>3.3.0</maven.invoker.plugin.version>
-        <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
+        <maven.invoker.plugin.version>3.9.0</maven.invoker.plugin.version>
+        <maven.war.plugin.version>3.4.0</maven.war.plugin.version>
         <maven.makepkgs.plugin.version>0.6.2</maven.makepkgs.plugin.version>
-        <maven.jaxb2.plugin.version>0.15.1</maven.jaxb2.plugin.version>
-        <maven.antlr.plugin.version>2.2</maven.antlr.plugin.version>
-        <maven.enforcer.plugin.version>3.1.0</maven.enforcer.plugin.version>
+        <maven.jaxb2.plugin.version>0.15.3</maven.jaxb2.plugin.version>
+        <maven.antlr.plugin.version>2.4</maven.antlr.plugin.version>
+
         <maven.jaxws.plugin.version>2.6</maven.jaxws.plugin.version>
         <maven.apt.plugin.version>1.0-alpha-5</maven.apt.plugin.version>
-        <maven.build.helper.plugin.version>3.3.0</maven.build.helper.plugin.version>
-        <maven.plugin.api.version>3.6.0</maven.plugin.api.version>
+        <maven.plugin.api.version>3.9.9</maven.plugin.api.version>
 
         <!-- Servlet -->
-        <!-- Requires JDK8u161 or above-->
-        <grizzly.npn.api.version>2.0.0.payara-p1</grizzly.npn.api.version>
-        <grizzly.npn.osgi.version>2.0.0</grizzly.npn.osgi.version>
-
-        <!-- Other -->
-        <hk2.plugin.version>3.0.2</hk2.plugin.version> <!-- May need patched-->
-        <tiger.types.version>1.4.payara-p1</tiger.types.version>
-
-        <glassfish-corba.version>4.2.4.payara-p2</glassfish-corba.version>
-        <saaj-api.version>1.4.0</saaj-api.version>
+        <grizzly-npn-osgi.version>2.0.0</grizzly-npn-osgi.version>
 
         <!-- Library for introspecting types with full generic information including resolving of field and method types. -->
-        <classmate.version>1.5.0</classmate.version>
-        <jboss.logging.version>3.5.0.Final</jboss.logging.version>
-        <!-- Javassist (JAVA programming ASSISTant) makes Java bytecode manipulation simple. It is a class library for editing bytecodes in Java. -->
-        <javassist.version>3.29.2-GA</javassist.version>
+        <classmate.version>1.7.0</classmate.version>
+        <jboss-logging.version>3.6.1.Final</jboss-logging.version>
 
-        <!-- A pure Java implementation of the SSH-2 protocol -->
-        <trilead-ssh2.version>build-217-jenkins-16</trilead-ssh2.version>
-
-        <!-- Primitive Function Library (PFL); a library of simple utilities used by Glassfish -->
-        <pfl.version>4.1.2</pfl.version>
         <!-- GlassFish MBean Annotation Library -->
-        <gmbal.version>4.0.3</gmbal.version>
         <antlr.version>2.7.7</antlr.version>
 
-        <commons-io.version>2.11.0</commons-io.version>
+        <commons-io.version>2.18.0</commons-io.version>
 
-        <mimepull.version>1.10.0</mimepull.version>
 
         <!-- Apache Felix is an open source implementation of the OSGi Core Release 8 framework specification. -->
         <org.apache.felix.main.version>7.0.5</org.apache.felix.main.version>
-        <org.apache.felix.webconsole.version>4.8.4</org.apache.felix.webconsole.version>
+        <org.apache.felix.webconsole.version>5.0.10</org.apache.felix.webconsole.version>
         <org.apache.felix.eventadmin.version>1.6.4</org.apache.felix.eventadmin.version>
         <org.apache.felix.shell.version>1.4.3</org.apache.felix.shell.version>
         <org.apache.felix.gogo.runtime.version>1.1.6</org.apache.felix.gogo.runtime.version>
@@ -157,43 +121,26 @@
         <org.apache.felix.gogo.command.version>1.1.2</org.apache.felix.gogo.command.version>
         <org.apache.felix.fileinstall.version>3.7.4.payara-p1</org.apache.felix.fileinstall.version>
         <org.apache.felix.configadmin.version>1.9.26</org.apache.felix.configadmin.version>
-        <org.apache.felix.scr.version>2.1.30</org.apache.felix.scr.version>
+        <org.apache.felix.scr.version>2.2.12</org.apache.felix.scr.version>
         <org.apache.felix.bundlerepository.version>2.0.10</org.apache.felix.bundlerepository.version>
 
         <!-- OSGi Promise and Function is required for Apache Felix scr -->
-        <org.osgi.util.promise.version>1.2.0</org.osgi.util.promise.version>
+        <org.osgi.util.promise.version>1.3.0</org.osgi.util.promise.version>
         <org.osgi.util.function.version>1.2.0</org.osgi.util.function.version>
+        <!-- Service Component also now required since Felix SCR 2.2.2 -->
+        <org.osgi.service.component.version>1.5.1</org.osgi.service.component.version>
 
         <!-- Java Business Integration (JBI) is a specification for an approach to implementing a service-oriented architecture (SOA).  -->
-        <glassfish-management-api.version>3.2.3.payara-p1</glassfish-management-api.version>
         <btrace.version>1.2.3</btrace.version>
-        <opendmk.version>1.0-b01-ea</opendmk.version>
-        <l10n.version>3.1-b41</l10n.version>
-        <ha-api.version>3.1.13</ha-api.version>
-        <mockito.version>2.28.2</mockito.version>
 
         <!-- Build -->
 
-        <glassfishbuild.version>3.2.20.payara-p2</glassfishbuild.version>
-        <source-annotation-processor.version>1.0</source-annotation-processor.version>
-        <logging-annotation-processor.version>1.9</logging-annotation-processor.version>
-        <command-security-plugin.version>1.0.13</command-security-plugin.version>
-        <command.security.maven.plugin.isFailureFatal>false</command.security.maven.plugin.isFailureFatal>
-        <copyright-plugin.version>1.39</copyright-plugin.version>
         <nucleus.install.dir.name>nucleus</nucleus.install.dir.name>
-        <ant.version>1.10.12</ant.version>
-        <ant-launcher.version>1.10.12</ant-launcher.version>
-        <metainf-services.version>1.9</metainf-services.version>
+        <ant.version>1.10.15</ant.version>
+        <javadoc.options>-Xdoclint:none</javadoc.options>
 
         <!-- Debug / analysis -->
-        <findbugs.skip>true</findbugs.skip>
-        <findbugs.threshold>High</findbugs.threshold>
-        <findbugs.common>exclude-common.xml</findbugs.common>
-        <findbugs.exclude/>
-        <findbugs-maven-plugin.version>3.0.5</findbugs-maven-plugin.version>
-        <findbugs.version>1.7</findbugs.version>
-        <findbugs.glassfish.logging.validLoggerPrefixes>jakarta.enterprise</findbugs.glassfish.logging.validLoggerPrefixes>
-        <jacoco.plugin.version>0.8.8</jacoco.plugin.version>
+        <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
 
     </properties>
 
@@ -204,7 +151,6 @@
         <module>core</module>
         <module>admin</module>
         <module>flashlight</module>
-        <module>grizzly</module>
         <module>deployment</module>
         <module>payara-modules</module>
         <module>packager</module>
@@ -212,7 +158,6 @@
         <module>security</module>
         <module>test-utils</module>
         <module>diagnostics</module>
-        <module>resources</module>
         <module>resources-l10n</module>
         <module>hk2</module>
     </modules>
@@ -317,12 +262,6 @@
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-remote-resources-plugin</artifactId>
-                    <version>${maven.remote.resources.plugin.version}</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-eclipse-plugin</artifactId>
                     <version>${maven.eclipse.plugin.version}</version>
                 </plugin>
@@ -383,7 +322,7 @@
                 </plugin>
 
                 <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
+                    <groupId>org.omnifaces</groupId>
                     <artifactId>antlr-maven-plugin</artifactId>
                     <version>${maven.antlr.plugin.version}</version>
                 </plugin>
@@ -398,14 +337,9 @@
                     <version>${maven.apt.plugin.version}</version>
                 </plugin>
                 <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>${maven.build.helper.plugin.version}</version>
-                </plugin>
-                <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>${jacoco.plugin.version}</version>
+                    <version>${jacoco-maven-plugin.version}</version>
                     <configuration>
                         <skip>${maven.test.skip}</skip>
                         <propertyName>argLine</propertyName>
@@ -450,53 +384,6 @@
 
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <version>${maven.enforcer.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>enforce-versions</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <requireJavaVersion>
-                                    <version>[${jdk.version},18.9)</version>
-                                    <message>You need at least JDK11</message>
-                                </requireJavaVersion>
-                                <requireMavenVersion>
-                                    <version>[3.0.3,3.2.1],[3.2.3,)</version>
-                                <message>You need Maven greater than 3.0.3 (3.2.2 not supported)</message>
-                                </requireMavenVersion>
-                            </rules>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>add-resource</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>add-resource</goal>
-                        </goals>
-                        <configuration>
-                            <resources>
-                                <resource>
-                                    <directory>src/main/manpages</directory>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
                 <groupId>org.glassfish.build</groupId>
                 <artifactId>glassfishbuild-maven-plugin</artifactId>
                 <extensions>true</extensions>
@@ -516,7 +403,6 @@
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-eclipse-plugin</artifactId>
@@ -643,35 +529,6 @@ Parent is ${project.parent}</echo>
             </plugin>
 
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
-                <version>${findbugs-maven-plugin.version}</version>
-                <configuration>
-                    <skip>${findbugs.skip}</skip>
-                    <threshold>${findbugs.threshold}</threshold>
-                    <findbugsXmlWithMessages>true</findbugsXmlWithMessages>
-                    <excludeFilterFile>
-                        ${findbugs.common},${findbugs.exclude}
-                    </excludeFilterFile>
-                    <jvmArgs>-Dfindbugs.glassfish.logging.validLoggerPrefixes=${findbugs.glassfish.logging.validLoggerPrefixes}</jvmArgs>
-                    <plugins>
-                        <plugin>
-                            <groupId>org.glassfish.findbugs</groupId>
-                            <artifactId>findbugs-logging-detectors</artifactId>
-                            <version>${findbugs.version}</version>
-                        </plugin>
-                    </plugins>
-                </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.glassfish.findbugs</groupId>
-                        <artifactId>findbugs</artifactId>
-                        <version>${findbugs.version}</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <configuration>
@@ -680,11 +537,39 @@ Parent is ${project.parent}</echo>
                 </configuration>
             </plugin>
 
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-resource</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>add-resource</goal>
+                        </goals>
+                        <configuration>
+                            <resources>
+                                <resource>
+                                    <directory>src/main/manpages</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>fish.payara.server.core</groupId>
+                <artifactId>core-bom</artifactId>
+                <version>${payara.core.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>fish.payara.api</groupId>
                 <artifactId>payara-bom</artifactId>
@@ -790,6 +675,11 @@ Parent is ${project.parent}</echo>
                 <artifactId>org.osgi.util.function</artifactId>
                 <version>${org.osgi.util.function.version}</version>
             </dependency>
+            <dependency> <!-- Required for org.apache.felix.scr-->
+                <groupId>org.osgi</groupId>
+                <artifactId>org.osgi.service.component</artifactId>
+                <version>${org.osgi.service.component.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.jvnet.mimepull</groupId>
@@ -875,13 +765,13 @@ Parent is ${project.parent}</echo>
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
-                <version>4.13.2</version>
+                <version>${junit.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.testng</groupId>
                 <artifactId>testng</artifactId>
-                <version>7.4.0</version>
+                <version>${testng.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -893,13 +783,13 @@ Parent is ${project.parent}</echo>
             <dependency>
                 <groupId>org.hamcrest</groupId>
                 <artifactId>hamcrest</artifactId>
-                <version>2.2</version>
+                <version>3.0</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.awaitility</groupId>
                 <artifactId>awaitility</artifactId>
-                <version>4.0.3</version>
+                <version>${awaitility.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -915,7 +805,7 @@ Parent is ${project.parent}</echo>
             <dependency>
                 <groupId>org.apache.ant</groupId>
                 <artifactId>ant-launcher</artifactId>
-                <version>${ant-launcher.version}</version>
+                <version>${ant.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.sun</groupId>
@@ -936,7 +826,7 @@ Parent is ${project.parent}</echo>
             <dependency>
                 <groupId>org.bsc.maven</groupId>
                 <artifactId>maven-processor-plugin</artifactId>
-                <version>3.3.3</version>
+                <version>5.1-jdk8</version>
             </dependency>
             <dependency>
                 <groupId>org.glassfish.annotations</groupId>
@@ -960,25 +850,15 @@ Parent is ${project.parent}</echo>
                 <version>${javassist.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.eclipse.transformer</groupId>
-                <artifactId>org.eclipse.transformer.payara</artifactId>
-                <version>${payara.transformer.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>fish.payara.deployment.transformer</groupId>
-                <artifactId>deployment-transformer-api</artifactId>
-                <version>${payara.deployment.transformer.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcprov-jdk15on</artifactId>
-                <version>1.64</version>
+                <version>${bouncycastle-jdk15on.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcpkix-jdk15on</artifactId>
-                <version>1.64</version>
+                <version>${bouncycastle-jdk15on.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -991,43 +871,6 @@ Parent is ${project.parent}</echo>
     </dependencyManagement>
 
     <profiles>
-        <profile>
-            <id>ci</id>
-            <modules>
-                <module>tests</module>
-            </modules>
-        </profile>
-
-        <profile>
-            <id>copyright</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <build>
-                <pluginManagement>
-                    <plugins>
-                        <plugin>
-                            <groupId>org.glassfish.copyright</groupId>
-                            <artifactId>glassfish-copyright-maven-plugin</artifactId>
-                            <version>${copyright-plugin.version}</version>
-                            <configuration>
-                                <excludeFile>
-                                    copyright-exclude
-                                </excludeFile>
-                            </configuration>
-                            <dependencies>
-                                <dependency>
-                                    <groupId>fish.payara.server.internal</groupId>
-                                    <artifactId>copyright</artifactId>
-                                    <version>${project.version}</version>
-                                </dependency>
-                            </dependencies>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
-            </build>
-        </profile>
-
         <profile>
             <id>embed-source</id>
             <build>
@@ -1047,132 +890,6 @@ Parent is ${project.parent}</echo>
                 </plugins>
             </build>
         </profile>
-
-        <profile>
-            <id>release-phase2</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>findbugs</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <maven.test.skip>true</maven.test.skip>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>findbugs-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>run-findbugs</id>
-                                <phase>compile</phase>
-                                <goals>
-                                    <goal>findbugs</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>doclint-java8-disable</id>
-            <activation>
-                <jdk>[1.8,)</jdk>
-            </activation>
-            <properties>
-                <javadoc.options>-Xdoclint:none</javadoc.options>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>DeploySnapshot-Sonatype</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>payara-maven-central</id>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-                </snapshotRepository>
-            </distributionManagement>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.8</version>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <serverId>payara-maven-central</serverId>
-                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-         <profile>
-            <id>CodeCoverage</id>
-            <activation>
-                <property>
-                    <name>BUILD_NUMBER</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.jacoco</groupId>
-                        <artifactId>jacoco-maven-plugin</artifactId>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
     </profiles>
 
     <dependencies>
@@ -1183,30 +900,4 @@ Parent is ${project.parent}</echo>
             <optional>true</optional>
         </dependency>
     </dependencies>
-
-    <reporting>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-site-plugin</artifactId>
-                <configuration>
-                    <reportPlugins>
-                        <plugin>
-                            <groupId>org.codehaus.mojo</groupId>
-                            <artifactId>findbugs-maven-plugin</artifactId>
-                            <version>${findbugs-maven-plugin.version}</version>
-                            <configuration>
-                                <skip>${findbugs.skip}</skip>
-                                <threshold>${findbugs.threshold}</threshold>
-                                <excludeFilterFile>
-                                    exclude-common.xml,${findbugs.exclude}
-                                </excludeFilterFile>
-                            </configuration>
-                        </plugin>
-                    </reportPlugins>
-                </configuration>
-            </plugin>
-        </plugins>
-    </reporting>
-
 </project>

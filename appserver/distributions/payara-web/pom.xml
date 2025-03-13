@@ -47,12 +47,22 @@
     <parent>
         <groupId>fish.payara.distributions</groupId>
         <artifactId>distributions</artifactId>
-        <version>6.2023.2-SNAPSHOT</version>
+        <version>6.2025.4-SNAPSHOT</version>
     </parent>
     <artifactId>payara-web</artifactId>
     <name>Payara Web Distribution</name>
     <packaging>glassfish-distribution</packaging>
     <description>This pom describes how to assemble the Payara Web Distribution</description>
+
+    <!-- Override to stop flatten plugin resolving it to an incorrect URL using parent artifact IDs -->
+    <url>https://github.com/payara/Payara/</url>
+
+    <!-- Don't inherit SCM from parent since flatten resolves it incorrectly in a similar manner to the URL -->
+    <scm>
+        <url>https://github.com/payara/Payara/tree/main</url>
+        <connection>scm:git:git://github.com/payara/payara.git</connection>
+        <developerConnection>scm:git:ssh://github.com:payara/payara.git</developerConnection>
+    </scm>
 
     <build>
         <testSourceDirectory>src/test/java</testSourceDirectory>
@@ -119,30 +129,6 @@
             </plugin>
         </plugins>
     </build>
-    <profiles>
-        <profile>
-            <id>ips</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.jvnet.maven-antrun-extended-plugin</groupId>
-                        <artifactId>maven-antrun-extended-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>create-ips-distribution</id>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 
     <dependencies>
         <!-- following dependencies are needed to run tests... -->

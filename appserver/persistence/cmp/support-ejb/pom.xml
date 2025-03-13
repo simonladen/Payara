@@ -39,7 +39,7 @@
     only if the new code is made subject to such option by the copyright
     holder.
 
-    Portion Copyright 2022 Payara Foundation and/or affiliates
+    Portion Copyright [2022-2024] Payara Foundation and/or affiliates
 -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
@@ -47,7 +47,7 @@
     <parent>
         <groupId>fish.payara.server.internal.persistence.cmp</groupId>
         <artifactId>cmp</artifactId>
-        <version>6.2023.2-SNAPSHOT</version>
+        <version>6.2025.4-SNAPSHOT</version>
     </parent>
     <artifactId>cmp-support-ejb</artifactId>
     <packaging>glassfish-jar</packaging>
@@ -66,10 +66,6 @@
         </developer>
     </developers>
 
-    <properties>
-        <findbugs.exclude>${project.basedir}/exclude.xml</findbugs.exclude>
-    </properties>
-
     <build>
         <resources>
             <resource>
@@ -81,7 +77,7 @@
         </resources>
         <plugins>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
+                <groupId>org.omnifaces</groupId>
                 <artifactId>antlr-maven-plugin</artifactId>
                 <configuration>
                     <grammars>EJBQL.g, JDOQLCodeGeneration.g, Semantic.g</grammars>
@@ -125,12 +121,10 @@
         <dependency>
             <groupId>fish.payara.server.core.deployment</groupId>
             <artifactId>deployment-common</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fish.payara.server.core.common</groupId>
             <artifactId>common-util</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fish.payara.server.internal.packager</groupId>
@@ -148,33 +142,4 @@
             <artifactId>schema2beans</artifactId>
         </dependency>
     </dependencies>
-    
-    <!--
-        Findbugs needs org.netbeans.external:ddl,
-        we isolate it in a profile as it requires a separate repository definition.
-        can be removed once GLASSFISH-20835 is resolved
-    -->
-    <profiles>
-        <profile>
-            <id>findbugs</id>
-            <repositories>
-                <repository>
-                    <id>netbeans</id>
-                    <releases>
-                        <enabled>true</enabled>
-                    </releases>
-                    <snapshots>
-                        <enabled>false</enabled>
-                    </snapshots>
-                    <url>https://bits.netbeans.org/maven2</url>
-                </repository>
-            </repositories>
-            <dependencies>
-                <dependency>
-                    <groupId>org.netbeans.external</groupId>
-                    <artifactId>ddl</artifactId>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
 </project>

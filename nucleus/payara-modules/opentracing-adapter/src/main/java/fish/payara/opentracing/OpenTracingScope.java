@@ -1,14 +1,14 @@
 /*
  *  DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  * 
- *  Copyright (c) [2018-2020] Payara Foundation and/or its affiliates. All rights reserved.
+ *  Copyright (c) [2018-2023] Payara Foundation and/or its affiliates. All rights reserved.
  * 
  *  The contents of this file are subject to the terms of either the GNU
  *  General Public License Version 2 only ("GPL") or the Common Development
  *  and Distribution License("CDDL") (collectively, the "License").  You
  *  may not use this file except in compliance with the License.  You can
  *  obtain a copy of the License at
- *  https://github.com/payara/Payara/blob/master/LICENSE.txt
+ *  https://github.com/payara/Payara/blob/main/LICENSE.txt
  *  See the License for the specific
  *  language governing permissions and limitations under the License.
  * 
@@ -65,6 +65,7 @@ import io.opentracing.Span;
  * @author jonathan coustick
  * @since 5.183
  */
+@Deprecated
 public class OpenTracingScope implements io.opentracing.Scope {
 
     private final Span currentSpan;

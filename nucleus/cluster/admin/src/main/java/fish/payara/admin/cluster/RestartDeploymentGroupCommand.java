@@ -8,7 +8,7 @@
  * and Distribution License("CDDL") (collectively, the "License").  You
  * may not use this file except in compliance with the License.  You can
  * obtain a copy of the License at
- * https://github.com/payara/Payara/blob/master/LICENSE.txt
+ * https://github.com/payara/Payara/blob/main/LICENSE.txt
  * See the License for the specific
  * language governing permissions and limitations under the License.
  *
@@ -198,6 +198,7 @@ public class RestartDeploymentGroupCommand implements AdminCommand {
             ParameterMap instanceParameterMap = new ParameterMap();
             // Set the instance name as the operand for the commnd
             instanceParameterMap.set("DEFAULT", server.getName());
+            instanceParameterMap.add("timeout", String.valueOf(instanceTimeout));
 
             ActionReport instanceReport = runner.getActionReport("plain");
             instanceReport.setActionExitCode(ActionReport.ExitCode.SUCCESS);
@@ -218,6 +219,7 @@ public class RestartDeploymentGroupCommand implements AdminCommand {
             instanceParameterMap = new ParameterMap();
             // Set the instance name as the operand for the commnd
             instanceParameterMap.set("DEFAULT", server.getName());
+            instanceParameterMap.add("timeout", String.valueOf(instanceTimeout));
             instanceReport.setActionExitCode(ActionReport.ExitCode.SUCCESS);
             invocation = runner.getCommandInvocation(
                     "start-instance", instanceReport, context.getSubject());

@@ -55,7 +55,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// Portions Copyright 2016-2022 Payara Foundation and/or its affiliates
+// Portions Copyright 2016-2024 Payara Foundation and/or its affiliates
 
 package org.glassfish.web.loader;
 
@@ -121,6 +121,7 @@ import java.security.ProtectionDomain;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -131,11 +132,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Predicate;
 import java.util.jar.Attributes;
 import java.util.jar.Attributes.Name;
 import java.util.jar.JarEntry;
@@ -253,6 +256,11 @@ public class WebappClassLoader
      * The debugging detail level of this component.
      */
     protected int debug = 0;
+
+    /**
+     * When configured it will host the value for SameSite Cookie
+     */
+    private String cookieSameSiteValue = "";
 
     /**
      * Should this class loader delegate to the parent class loader
@@ -720,6 +728,13 @@ public class WebappClassLoader
         this.debug = debug;
     }
 
+    public String getCookieSameSiteValue() {
+        return cookieSameSiteValue;
+    }
+
+    public void setCookieSameSiteValue(String cookieSameSiteValue) {
+        this.cookieSameSiteValue = cookieSameSiteValue;
+    }
 
     /**
      * Return the "delegate first" flag for this class loader.
@@ -1160,6 +1175,18 @@ public class WebappClassLoader
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
+        Predicate<String> matchesInternal = str -> str.matches(".*generated/.*__.*");
+        boolean isInternal = false;
+        if (repositoryURLs != null) {
+            isInternal = Arrays.stream(repositoryURLs).map(URL::toString)
+                    .filter(matchesInternal).findAny().isPresent();
+        }
+        if (canonicalLoaderDir != null && matchesInternal.test(canonicalLoaderDir)) {
+            isInternal = true;
+        }
+        if (isInternal) {
+            sb.append("(internal) ");
+        }
         sb.append("WebappClassLoader (delegate=");
         sb.append(delegate);
         if (repositoryURLs != null) {
@@ -1817,6 +1844,11 @@ public class WebappClassLoader
             // Ignore
         }
 
+        // If we haven't found it locally, and we're using bundled JSF, DON'T delegate any lookup if it's a JSF class
+        if (useMyFaces && !delegateLoad && (name.startsWith("javax.faces") || name.startsWith("jakarta.faces") || name.startsWith("com.sun.faces"))) {
+            throw new ClassNotFoundException(String.format("Class [%s] could not be found in bundled JSF", name));
+        }
+
         // (3) Delegate if class was not found locally
         if ((application.isWhitelistEnabled()? isWhitelisted : true) && !delegateLoad) {
             if (logger.isLoggable(Level.FINER)) {
@@ -2019,6 +2051,7 @@ public class WebappClassLoader
         // START SJSAS 6258619
         ClassLoaderUtil.releaseLoader(this);
         // END SJSAS 6258619
+        clearJaxRSCache();
 
         synchronized(jarFilesLock) {
             started = false;
@@ -2625,6 +2658,22 @@ public class WebappClassLoader
         }
     }
 
+    private void clearJaxRSCache() {
+        try {
+            Class<?> cdiComponentProvider = CachingReflectionUtil
+                    .getClassFromCache("org.glassfish.jersey.ext.cdi1x.internal.CdiComponentProvider", this);
+            if (cdiComponentProvider != null) {
+                Field runtimeSpecificsField = CachingReflectionUtil.getFieldFromCache(cdiComponentProvider,
+                        "runtimeSpecifics", true);
+                Object runtimeSpecifics = runtimeSpecificsField.get(null);
+                CachingReflectionUtil.getMethodFromCache(runtimeSpecifics.getClass(),
+                                "clearJaxRsResource", true, ClassLoader.class)
+                        .invoke(runtimeSpecifics, this);
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Error clearing Jax-Rs cache", e);
+        }
+    }
 
     /**
      * Clear the {@link ResourceBundle} cache of any bundles loaded by this

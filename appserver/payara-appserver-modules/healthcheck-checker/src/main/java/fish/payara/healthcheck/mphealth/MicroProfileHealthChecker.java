@@ -1,14 +1,14 @@
 /*
  *  DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
- * 
- *  Copyright (c) [2018-2021] Payara Foundation and/or its affiliates. All rights reserved.
+ *
+ *  Copyright (c) [2018-2024] Payara Foundation and/or its affiliates. All rights reserved.
  * 
  *  The contents of this file are subject to the terms of either the GNU
  *  General Public License Version 2 only ("GPL") or the Common Development
  *  and Distribution License("CDDL") (collectively, the "License").  You
  *  may not use this file except in compliance with the License.  You can
  *  obtain a copy of the License at
- *  https://github.com/payara/Payara/blob/master/LICENSE.txt
+ *  https://github.com/payara/Payara/blob/main/LICENSE.txt
  *  See the License for the specific
  *  language governing permissions and limitations under the License.
  * 
@@ -51,6 +51,8 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
+
+import fish.payara.internal.notification.EventLevel;
 import jakarta.validation.constraints.Pattern;
 import jakarta.inject.Inject;
 
@@ -170,6 +172,14 @@ implements PostConstruct, MonitoringDataSource, MonitoringWatchSource {
             }
         }
         return result;
+    }
+
+    @Override
+    protected EventLevel createNotificationEventLevel (HealthCheckResultStatus checkResult) {
+        if (checkResult == HealthCheckResultStatus.FINE || checkResult == HealthCheckResultStatus.GOOD) {
+            return EventLevel.INFO;
+        }
+        return EventLevel.WARNING;
     }
 
     @Override

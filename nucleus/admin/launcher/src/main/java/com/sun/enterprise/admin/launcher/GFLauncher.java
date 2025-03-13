@@ -37,7 +37,7 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
-// Portions Copyright [2016-2021] [Payara Foundation and/or its affiliates]
+// Portions Copyright [2016-2024] [Payara Foundation and/or its affiliates]
 
 package com.sun.enterprise.admin.launcher;
 
@@ -56,6 +56,7 @@ import com.sun.enterprise.util.SystemPropertyConstants;
 import com.sun.enterprise.util.io.FileUtils;
 import fish.payara.admin.launcher.PayaraDefaultJvmOptions;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
@@ -233,6 +234,10 @@ public abstract class GFLauncher {
         needsManualUpgrade = !parser.hasDefaultConfig();
         setupCalledByClients = true;
     }
+    
+    public Map<String, String> getSysPropsFromXml() {
+        return sysPropsFromXml;
+    }
 
     /**
      * Returns the admin realm key file for the server, if the admin realm is a
@@ -378,15 +383,17 @@ public abstract class GFLauncher {
         return option.startsWith("-Xrunjdwp:") || option.startsWith("-agentlib:jdwp");
     }
 
+    private static final String DEBUG_ADDRESS_PORT_GROUP = "port";
+    private static final Pattern DEBUG_ADDRESS_PATTERN = Pattern.compile(".*address=(?<hostWithColon>(?<host>.+):)?(?<port>\\d*).*");
+
     static int extractDebugPort(String option) {
-        Pattern portRegex = Pattern.compile(".*address=(?<port>\\d*).*");
-        Matcher m = portRegex.matcher(option);
+        Matcher m = DEBUG_ADDRESS_PATTERN.matcher(option);
         if (!m.matches()) {
             return -1;
         }
         try {
-            String addressGroup = m.group("port");
-            return Integer.parseInt(addressGroup);
+            String portGroup = m.group(DEBUG_ADDRESS_PORT_GROUP);
+            return Integer.parseInt(portGroup);
         } catch (NumberFormatException nfex) {
             return -1;
         }
@@ -602,7 +609,7 @@ public abstract class GFLauncher {
         OutputStreamWriter osw = null;
         BufferedWriter bw = null;
         try {
-            osw = new OutputStreamWriter(os);
+            osw = new OutputStreamWriter(os, StandardCharsets.UTF_8);
             bw = new BufferedWriter(osw);
             for (String token : info.securityTokens) {
                 bw.write(token);
@@ -904,7 +911,7 @@ public abstract class GFLauncher {
             Runtime r = Runtime.getRuntime();
             Process p = r.exec(javaExePath + " -version");
             p.waitFor();
-            try (BufferedReader b = new BufferedReader(new InputStreamReader(p.getErrorStream()))) {
+            try (BufferedReader b = new BufferedReader(new InputStreamReader(p.getErrorStream(), StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = b.readLine()) != null) {
                     Matcher m = JAVA_VERSION_PATTERN.matcher(line);

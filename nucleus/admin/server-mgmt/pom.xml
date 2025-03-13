@@ -44,20 +44,18 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <parent>
-        <groupId>fish.payara.server.internal.admin</groupId>
-        <artifactId>nucleus-admin</artifactId>
-        <version>6.2023.2-SNAPSHOT</version>
+        <groupId>fish.payara.server.core</groupId>
+        <artifactId>core-parent</artifactId>
+        <version>6.26.0-SNAPSHOT</version>
+        <relativePath>../../../core/core-parent</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
+    <groupId>fish.payara.server.core.admin</groupId>
     <artifactId>server-mgmt</artifactId>
     <packaging>glassfish-jar</packaging>
 
     <name>admin-server-management</name>
     <description>Server Management</description>
-
-    <properties>
-        <findbugs.exclude>${project.basedir}/exclude.xml</findbugs.exclude>
-    </properties>
 
     <build>
         <resources>
@@ -83,7 +81,7 @@
                 root to the build ourselves... -->
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.1.0</version>
                 <dependencies>
                     <dependency>
                         <groupId>com.sun.xml.bind</groupId>
@@ -143,17 +141,14 @@
         <dependency>
             <groupId>fish.payara.server.core.common</groupId>
             <artifactId>common-util</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fish.payara.server.core.admin</groupId>
             <artifactId>admin-util</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fish.payara.server.core.admin</groupId>
             <artifactId>admin-cli</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>jakarta.xml.bind</groupId>

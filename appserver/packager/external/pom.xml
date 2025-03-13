@@ -40,7 +40,7 @@
     holder.
 
 -->
-<!-- Portions Copyright [2017-2019] [Payara Foundation and/or its affiliates] -->
+<!-- Portions Copyright 2017-2024 Payara Foundation and/or its affiliates -->
 
 <!--
   External repackaging modules.
@@ -52,7 +52,7 @@
     <parent>
       <groupId>fish.payara.server</groupId>
       <artifactId>payara-parent</artifactId>
-      <version>6.2023.2-SNAPSHOT</version>
+      <version>6.2025.4-SNAPSHOT</version>
       <relativePath>../../pom.xml</relativePath>
     </parent>
     
@@ -61,18 +61,12 @@
     <artifactId>external</artifactId>
     <name>Repackaged external modules</name>
 
-    <properties>
-        <findbugs.skip>true</findbugs.skip>
-        <deploy.skip>true</deploy.skip>
-    </properties>
-
     <modules>
         <module>ant</module>
         <module>h2db</module>
         <module>jmsra</module>
         <module>jcip</module>
-        <module>libpam4j</module>
-        <module>jersey-container-grizzly2-http-transition</module>
+        <module>metro-xmlsec</module>
         <module>jakarta-ee9-shim</module>
     </modules>
     <build>

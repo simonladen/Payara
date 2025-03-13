@@ -37,7 +37,7 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
-// Portions Copyright [2017-2020] Payara Foundation and/or Affiliates
+// Portions Copyright [2017-2024] Payara Foundation and/or Affiliates
 
 package com.sun.enterprise.admin.servermgmt.cli;
 
@@ -47,20 +47,25 @@ import static com.sun.enterprise.util.net.NetUtils.isRunning;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.logging.Level.FINER;
 
+import com.sun.enterprise.admin.launcher.GFLauncher;
+import com.sun.enterprise.admin.launcher.GFLauncherException;
+import com.sun.enterprise.admin.launcher.GFLauncherInfo;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+import java.util.stream.Collectors;
+
+import com.sun.enterprise.universal.process.ProcessState;
 import org.glassfish.api.admin.CommandException;
 
 import com.sun.enterprise.admin.cli.CLIConstants;
 import com.sun.enterprise.admin.cli.CLIUtil;
 import com.sun.enterprise.admin.cli.Environment;
-import com.sun.enterprise.admin.launcher.GFLauncher;
-import com.sun.enterprise.admin.launcher.GFLauncherException;
-import com.sun.enterprise.admin.launcher.GFLauncherInfo;
 import com.sun.enterprise.universal.i18n.LocalStringsImpl;
 import com.sun.enterprise.universal.process.ProcessUtils;
 import com.sun.enterprise.util.HostAndPort;
@@ -91,8 +96,16 @@ public class StartServerHelper {
     private final int debugPort;
     private final boolean isDebugSuspend;
     // only set when actively trouble-shooting or investigating...
+    
+    private boolean isWarmup = false;
     private static final  boolean DEBUG_MESSAGES_ON = false;
     private static final LocalStringsImpl STRINGS = new LocalStringsImpl(StartServerHelper.class);
+    
+    private static final String PROPS_PORT_NAME = "_PORT";
+    
+    private static final String PROPS_HZ_PORT_NAME = "HZ_LISTENER_PORT";
+
+    private static final String PROPS_JMS_PROVIDER_PORT = "JMS_PROVIDER_PORT";
 
     public StartServerHelper(Logger logger0, boolean terse0,
             ServerDirs serverDirs0, GFLauncher launcher0,
@@ -266,6 +279,9 @@ public class StartServerHelper {
         if (debugPort >= 0) {
             logger.info(STRINGS.get("ServerStart.DebuggerMessage", "" + debugPort));
         }
+        if (isWarmup) {
+            logger.info(STRINGS.get("ServerStart.SuccessWithWarmupEnabled"));
+        }
     }
 
     /**
@@ -296,9 +312,10 @@ public class StartServerHelper {
 
     private boolean checkPorts() {
         String err = adminPortInUse();
+        err = validateAdditionalPortsForConnection();
 
         if (err != null) {
-            logger.warning(err);
+            logger.severe(err);
             return false;
         }
 
@@ -333,6 +350,32 @@ public class StartServerHelper {
         return null;
     }
 
+    /**
+     * This method will validate configuration ports for each host on this StartServer configuration
+     * @return String error message if some port is used by another instance
+     */
+    private String validateAdditionalPortsForConnection() {
+        List<HostAndPort> list = info.getAdminAddresses();
+        String host = null;
+        if(list.size() > 0) {
+            for (HostAndPort addr : list) {
+                host = addr.getHost();
+                Map<String, String> propsFromXMl = this.launcher.getSysPropsFromXml();
+                Set<Map.Entry<String, String>> setOfPorts = propsFromXMl.entrySet().stream()
+                        .filter(e -> !e.getKey().contains(PROPS_HZ_PORT_NAME)
+                                // Ignore JMS as it might be set to REMOTE
+                                && !e.getKey().contains(PROPS_JMS_PROVIDER_PORT)
+                                && e.getKey().contains(PROPS_PORT_NAME)).collect(Collectors.toSet());
+                for (Map.Entry<String, String> e: setOfPorts) {
+                    if(!NetUtils.isPortFree(host, Integer.parseInt(e.getValue()))) {
+                        return String.format("Port %d is in use", Integer.parseInt(e.getValue()));
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
     // use the pid we received from the parent server and platform specific tools
     // to see FOR SURE when the entire JVM process is gone.  This solves
     // potential niggling bugs.
@@ -346,18 +389,18 @@ public class StartServerHelper {
         long start = System.currentTimeMillis();
         try {
             do {
-                Boolean b = ProcessUtils.isProcessRunning(pid);
-                if (b == null) {
+                ProcessState b = ProcessUtils.getProcessRunningState(pid);
+                if (b == ProcessState.ERROR) {
                     // this means we were unable to find out from the OS if the process
                     // is running or not
-                    debugMessage("ProcessUtils.isProcessRunning(" + pid + ") "
+                    debugMessage("ProcessUtils.getProcessRunningState(" + pid + ") "
                             + "returned null which means we can't get process "
                             + "info on this platform.");
 
                     new ParentDeathWaiterPureJava();
                     return;
                 }
-                if (!b) {
+                if (b == ProcessState.STOPPED) {
                     debugMessage("Parent process (" + pid + ") is dead.");
                     return;
                 }
@@ -391,6 +434,14 @@ public class StartServerHelper {
             Environment env = new Environment();
             CLIUtil.writeCommandToDebugLog("restart-debug", env, new String[]{"DEBUG MESSAGE FROM RESTART JVM", s}, 99999);
         }
+    }
+    
+    public void setWarmup(boolean warmup) {
+        this.isWarmup = warmup;
+    }
+    
+    public boolean getWarmup() {
+        return isWarmup;
     }
 
     /**

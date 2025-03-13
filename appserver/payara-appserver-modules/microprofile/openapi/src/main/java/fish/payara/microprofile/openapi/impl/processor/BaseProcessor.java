@@ -1,14 +1,14 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) [2018] Payara Foundation and/or its affiliates. All rights reserved.
+ * Copyright (c) [2018-2023] Payara Foundation and/or its affiliates. All rights reserved.
  *
  * The contents of this file are subject to the terms of either the GNU
  * General Public License Version 2 only ("GPL") or the Common Development
  * and Distribution License("CDDL") (collectively, the "License").  You
  * may not use this file except in compliance with the License.  You can
  * obtain a copy of the License at
- * https://github.com/payara/Payara/blob/master/LICENSE.txt
+ * https://github.com/payara/Payara/blob/main/LICENSE.txt
  * See the License for the specific
  * language governing permissions and limitations under the License.
  *
@@ -49,6 +49,7 @@ import static fish.payara.microprofile.openapi.impl.model.util.ModelUtils.normal
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -76,6 +77,8 @@ public class BaseProcessor implements OASProcessor {
 
         // Set the OpenAPI version if it hasn't been set
         if (api.getOpenapi() == null) {
+            // FIXME: change to 3.1.0 when MP TCK is upgraded
+            // api.setOpenapi("3.1.0");
             api.setOpenapi("3.0.0");
         }
 
@@ -147,11 +150,16 @@ public class BaseProcessor implements OASProcessor {
 
     private static void removeEmptyPaths(Paths paths) {
         final PathItem emptyPath = new PathItemImpl();
+        HashSet<String> namesToRemove = new HashSet<>();
         for (Entry<String, PathItem> pathItem : paths.getPathItems().entrySet()) {
             final String pathName = pathItem.getKey();
             if (emptyPath.equals(pathItem.getValue())) {
-                paths.removePathItem(pathName);
+                namesToRemove.add(pathName);
             }
+        }
+        // remove all names
+        for(String name : namesToRemove) {
+            paths.removePathItem(name);
         }
     }
 }

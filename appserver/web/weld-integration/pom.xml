@@ -48,7 +48,7 @@
     <parent>
 	      <groupId>fish.payara.server.internal.web</groupId>
     	  <artifactId>web</artifactId>
-        <version>6.2023.2-SNAPSHOT</version>
+        <version>6.2025.4-SNAPSHOT</version>
     </parent>
 
     <artifactId>weld-integration</artifactId>
@@ -68,10 +68,6 @@
             <organization>Oracle, Inc.</organization>
         </developer>
     </developers>
-
-    <properties>
-        <findbugs.exclude>${project.basedir}/exclude.xml</findbugs.exclude>
-    </properties>
 
     <build>
         <resources>
@@ -100,7 +96,6 @@
         <dependency>
             <groupId>fish.payara.server.core.web</groupId>
             <artifactId>web-glue</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>jakarta.enterprise</groupId>
@@ -175,7 +170,6 @@
         <dependency>
             <groupId>fish.payara.server.core.common</groupId>
             <artifactId>glassfish-api</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fish.payara.server.internal.ejb</groupId>
@@ -194,7 +188,7 @@
         <dependency>
             <groupId>org.easymock</groupId>
             <artifactId>easymock</artifactId>
-            <version>3.0</version>
+            <version>5.5.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>

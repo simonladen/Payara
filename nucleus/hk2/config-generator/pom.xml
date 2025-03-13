@@ -47,16 +47,12 @@
     <parent>
         <groupId>fish.payara.server.internal.hk2</groupId>
         <artifactId>glassfish-nucleus-hk2</artifactId>
-        <version>6.2023.2-SNAPSHOT</version>
+        <version>6.2025.4-SNAPSHOT</version>
     </parent>
     <artifactId>config-generator</artifactId>
     <packaging>maven-plugin</packaging>
 
     <name>HK2 configuration reader generator module</name>
-
-    <properties>
-        <findbugs.exclude>${project.basedir}/exclude.xml</findbugs.exclude>
-    </properties>
 
     <build>
         <plugins>
@@ -83,7 +79,6 @@
         <dependency>
             <groupId>fish.payara.server.core.hk2</groupId>
             <artifactId>hk2-config</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>

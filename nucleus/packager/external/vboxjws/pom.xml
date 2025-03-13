@@ -46,7 +46,7 @@
     <parent>
         <groupId>fish.payara.server.internal.packager</groupId>
         <artifactId>nucleus-external</artifactId>
-        <version>6.2023.2-SNAPSHOT</version>
+        <version>6.2025.4-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>vboxjws</artifactId>
@@ -122,40 +122,10 @@
         <dependency>
             <groupId>org.virtualbox</groupId>
             <artifactId>vboxjws</artifactId>
-            <version>4.1.4</version>
+            <version>4.2.8</version>
             <!-- By indicating the scope as provided, GF distribution mechanism 
                  excludes this -->
             <optional>true</optional>
         </dependency>
     </dependencies>
-
-    <profiles>
-        <profile>
-            <!-- generate empty javadoc jar -->
-            <id>release-phase2</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-jar-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>create-empty-javadoc-jar</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                                <configuration>
-                                    <classesDirectory>${project.build.directory}/javadoc</classesDirectory>
-                                    <classifier>javadoc</classifier>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

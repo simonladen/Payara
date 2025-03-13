@@ -8,7 +8,7 @@
  * and Distribution License("CDDL") (collectively, the "License").  You
  * may not use this file except in compliance with the License.  You can
  * obtain a copy of the License at
- * https://github.com/payara/Payara/blob/master/LICENSE.txt
+ * https://github.com/payara/Payara/blob/main/LICENSE.txt
  * See the License for the specific
  * language governing permissions and limitations under the License.
  *
@@ -82,12 +82,12 @@ public class ManagedScheduledExecutorRest {
         AtomicInteger numberExecution = new AtomicInteger();
         ZoneId mexico = ZoneId.of("America/Mexico_City");
         Trigger trigger = new CronTrigger("* * * * * *", mexico);
-        ScheduledFuture feature = customManagedScheduleExecutorA.schedule(() -> {
+        ScheduledFuture future = customManagedScheduleExecutorA.schedule(() -> {
             numberExecution.getAndIncrement();
             System.out.println("Cron Trigger running");
         }, trigger);
         Thread.sleep(1500);
-        feature.cancel(true);
+        future.cancel(true);
         return "CronTrigger Submitted:"+numberExecution.get();
     }
 
@@ -103,20 +103,20 @@ public class ManagedScheduledExecutorRest {
         ZoneId mexico = ZoneId.of("America/Mexico_City");
         Trigger trigger = new CronTrigger("* * * * * *", mexico);
 
-        ScheduledFuture feature1 = customManagedScheduleExecutorA.schedule(() -> {
+        ScheduledFuture future1 = customManagedScheduleExecutorA.schedule(() -> {
             numberExecutionA.getAndIncrement();
             System.out.println("Cron Trigger running");
         }, trigger);
 
-        ScheduledFuture feature2 = customManagedScheduleExecutorB.schedule(() -> {
+        ScheduledFuture future2 = customManagedScheduleExecutorB.schedule(() -> {
             numberExecutionB.getAndIncrement();
             System.out.println("Cron Trigger running");
         }, trigger);
 
 
         Thread.sleep(1500);
-        feature1.cancel(true);
-        feature2.cancel(true);
+        future1.cancel(true);
+        future2.cancel(true);
         return "CronTrigger Submitted:"+(numberExecutionA.get()+numberExecutionB.get());
     }
 
@@ -128,12 +128,12 @@ public class ManagedScheduledExecutorRest {
         AtomicInteger numberExecution = new AtomicInteger();
         ZoneId mexico = ZoneId.of("America/Mexico_City");
         Trigger trigger = new CronTrigger("* * * * * *", mexico);
-        ScheduledFuture feature = customManagedScheduleExecutorC.schedule(() -> {
+        ScheduledFuture future = customManagedScheduleExecutorC.schedule(() -> {
             numberExecution.getAndIncrement();
             System.out.println("Cron Trigger running");
         }, trigger);
         Thread.sleep(1500);
-        feature.cancel(true);
+        future.cancel(true);
         return "CronTrigger Submitted:"+numberExecution.get();
     }
 

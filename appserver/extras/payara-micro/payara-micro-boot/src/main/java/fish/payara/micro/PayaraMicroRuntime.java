@@ -8,7 +8,7 @@
  * and Distribution License("CDDL") (collectively, the "License").  You
  * may not use this file except in compliance with the License.  You can
  * obtain a copy of the License at
- * https://github.com/payara/Payara/blob/master/LICENSE.txt
+ * https://github.com/payara/Payara/blob/main/LICENSE.txt
  * See the License for the specific
  * language governing permissions and limitations under the License.
  *
@@ -139,37 +139,6 @@ public interface PayaraMicroRuntime {
      * @return
      */
     public Map<InstanceDescriptor, Future<? extends ClusterCommandResult>> run(Collection<InstanceDescriptor> members, String command, String... args);
-
-    /**
-     * Runs a Callable object on all members of the Payara Micro Cluster
-     * Functionally equivalent to the run method on ClusterCommandRunner passing in
-     * all cluster members obtained from getClusteredPayaras()
-     * @param <T> The Type of the Callable
-     * @param callable The Callable object to run
-     * @return
-     * 
-     * @deprecated This method has an undefined ClassLoader and is unusable by a user, 
-     * as it only operates on server ClassLoader rather than on application ClassLoader <br/>
-     * {It will be removed in the upcoming releases}. 
-     */
-    @Deprecated
-    public <T extends Serializable> Map<InstanceDescriptor, Future<T>> run(Callable<T> callable);
-
-    /**
-     * Runs a Callable object on specified members of the Payara Micro Cluster
-     * Functionally equivalent to the run method on ClusterCommandRunner passing in
-     * all cluster members obtained from getClusteredPayaras()
-     * @param <T> The Type of the Callable
-     * @param members The collection of members to run the callable on
-     * @param callable The Callable object to run
-     * @return
-     * 
-     * @deprecated This method has an undefined ClassLoader and is unusable by a user, 
-     * as it only operates on server ClassLoader rather than on application ClassLoader <br/>
-     * {It will be removed in the upcoming releases}. 
-     */
-    @Deprecated
-    public <T extends Serializable> Map<InstanceDescriptor, Future<T>> run(Collection<InstanceDescriptor> members, Callable<T> callable);
 
     /**
      * Stops and then shuts down the Payara Micro Server

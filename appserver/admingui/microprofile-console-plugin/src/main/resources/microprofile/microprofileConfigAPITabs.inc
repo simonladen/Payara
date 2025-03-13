@@ -2,14 +2,14 @@
 
     DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 
-    Copyright (c) [2018-2020] Payara Foundation and/or its affiliates. All rights reserved.
+    Copyright (c) [2018-2024] Payara Foundation and/or its affiliates. All rights reserved.
 
     The contents of this file are subject to the terms of either the GNU
     General Public License Version 2 only ("GPL") or the Common Development
     and Distribution License("CDDL") (collectively, the "License").  You
     may not use this file except in compliance with the License.  You can
     obtain a copy of the License at
-    https://github.com/payara/Payara/blob/master/LICENSE.txt
+    https://github.com/payara/Payara/blob/main/LICENSE.txt
     See the License for the specific
     language governing permissions and limitations under the License.
 
@@ -63,6 +63,14 @@
           setSessionAttribute(key="microprofileConfigTabs" value="microProfileConfigSecretsDirectoryTab");
           gf.redirect(page="#{request.contextPath}/microprofile/microprofile/specs/configAPI/secretsDirectoryConfiguration.jsf?configName=#{configName}");
         />
+    </sun:tab>
+    <sun:tab id="microProfileConfigTOMLTab" immediate="$boolean{true}"
+             text="$resource{i18n_microprofile.microprofile.configuration.tomlTab}"
+             toolTip="$resource{i18n_microprofile.microprofile.configuration.tomlTab} Tab" >
+        <!command
+          setSessionAttribute(key="microprofileConfigTabs" value="microProfileConfigTOMLTab");
+          gf.redirect(page="#{request.contextPath}/microprofile/microprofile/specs/configAPI/tomlConfiguration.jsf?configName=#{configName}");
+          />
     </sun:tab>
     <sun:tab id="microProfileConfigAWSSecretsConfigSourceTab" immediate="$boolean{true}" 
              text="$resource{i18n_microprofile.microprofile.configuration.awsSecretsConfigSourceTab}" 

@@ -37,7 +37,7 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
-// Portions Copyright 2018-2022 Payara Foundation and/or affiliates
+// Portions Copyright 2018-2024 Payara Foundation and/or affiliates
 
 /*
  * UtilHandlers.java
@@ -58,9 +58,8 @@ import com.sun.jsftemplating.layout.descriptors.handler.HandlerContext;
 import com.sun.jsftemplating.layout.descriptors.handler.HandlerDefinition;
 import com.sun.jsftemplating.util.FileUtil;
 import jakarta.faces.component.UIViewRoot;
-import org.glassfish.admin.rest.utils.JsonUtil;
 import org.glassfish.admingui.common.util.GuiUtil;
-import org.glassfish.admingui.common.util.JSONUtil;
+import org.glassfish.admingui.common.util.JsonUtil;
 import org.glassfish.admingui.common.util.RestUtil;
 
 import java.io.File;
@@ -1156,7 +1155,7 @@ public class UtilHandlers {
                     break;
                 default:
                     // Check if we should unicode escape this...
-                    JSONUtil.appendUnicodeEscaped(ch, builder);
+                    JsonUtil.appendUnicodeEscaped(ch, builder);
                     break;
             }
             ch = it.next();
@@ -1165,4 +1164,16 @@ public class UtilHandlers {
     }
 
     private static final String PATH_SEPARATOR = "${path.separator}";
+
+    @Handler(id = "gf.sanitiseProperty",
+            input = {
+                    @HandlerInput(name = "systemProperty", type = String.class, required = true)
+            },
+            output = {
+                    @HandlerOutput(name = "result", type = String.class)
+            }
+    )
+    public static void sanitiseProperty(HandlerContext handlerCtx) {
+        handlerCtx.setOutputValue("result", escapePropertyValue(((String)handlerCtx.getInputValue("systemProperty"))));
+    }
 }

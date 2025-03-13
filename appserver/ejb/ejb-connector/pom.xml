@@ -47,16 +47,12 @@
     <parent>
         <groupId>fish.payara.server.internal.ejb</groupId>
         <artifactId>ejb</artifactId>
-        <version>6.2023.2-SNAPSHOT</version>
+        <version>6.2025.4-SNAPSHOT</version>
     </parent>
     <artifactId>gf-ejb-connector</artifactId>
     <packaging>glassfish-jar</packaging>
     
     <name>EJB Container connector for Glassfish</name>
-
-    <properties>
-        <findbugs.exclude>${project.basedir}/exclude.xml</findbugs.exclude>
-    </properties>
     
     <developers>
         <developer>
@@ -77,17 +73,14 @@
         <dependency>
             <groupId>fish.payara.server.core.common</groupId>
             <artifactId>internal-api</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fish.payara.server.core.common</groupId>
             <artifactId>glassfish-api</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fish.payara.server.core.deployment</groupId>
             <artifactId>deployment-common</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>jakarta.enterprise.deploy</groupId>
@@ -98,9 +91,9 @@
             <artifactId>hk2-core</artifactId>
         </dependency>
         <dependency>
-             <groupId>fish.payara.server.internal.test-utils</groupId>
+             <groupId>fish.payara.server.core.test-utils</groupId>
              <artifactId>utils</artifactId>
-             <version>${project.version}</version>
+
              <scope>test</scope>
         </dependency>
     </dependencies>

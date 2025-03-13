@@ -37,7 +37,7 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
-// Portions Copyright [2017-2022] [Payara Foundation and/or its affiliates]
+// Portions Copyright [2017-2024] [Payara Foundation and/or its affiliates]
 
 package com.sun.enterprise.v3.server;
 
@@ -46,6 +46,7 @@ import com.sun.enterprise.deploy.shared.ArchiveFactory;
 import com.sun.enterprise.util.io.FileUtils;
 import com.sun.enterprise.admin.report.HTMLActionReporter;
 import com.sun.enterprise.v3.bootstrap.BootCommandService;
+import fish.payara.enterprise.config.serverbeans.DeploymentGroup;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -252,12 +253,18 @@ public class ApplicationLoaderService implements org.glassfish.hk2.api.PreDestro
         // process the deployed applications
         Iterator iter = DeploymentOrder.getApplicationDeployments();
         while (iter.hasNext()) {
-          Application app = (Application)iter.next();
-          ApplicationRef appRef = server.getApplicationRef(app.getName());
-          if (appRef != null) {
-            // Does the application need to be run on this instance?
-            appDeployments.addAll(processApplication(app, appRef));
-          }
+            Application app = (Application)iter.next();
+            ApplicationRef appRef = server.getApplicationRef(app.getName());
+            if (appRef == null) {
+                List<Server> serverList = domain.getServers().getServer();
+                for (Server server : serverList) {
+                    appRef = domain.getApplicationRefInTarget(app.getName(), server.getName());
+                    if (appRef != null) break;
+                }
+            }
+            if (appRef != null) {
+                appDeployments.addAll(processApplication(app, appRef));
+            }
         }
 
         // does the user want us to run a particular application
@@ -402,7 +409,7 @@ public class ApplicationLoaderService implements org.glassfish.hk2.api.PreDestro
 
                     DeployCommandParameters deploymentParams =
                         app.getDeployParameters(appRef);
-                    deploymentParams.target = server.getName();
+                    deploymentParams.target = validateAndGetTargetName(appName, server.getName());
                     deploymentParams.origin = DeployCommandParameters.Origin.load;
                     deploymentParams.command = DeployCommandParameters.Command.startup_server;
                     if (domain.isAppReferencedByPaaSTarget(appName)) {
@@ -454,6 +461,29 @@ public class ApplicationLoaderService implements org.glassfish.hk2.api.PreDestro
         }
         appDeployments.removeIf(t -> t == null);
         return appDeployments;
+    }
+
+    /**
+     * Evaluate Target name against Deployment groups and returns correct name for deployment process
+     * @param appName application name
+     * @param serverName specified server name to evaluate
+     * @return String that represents target name
+     */
+    public String validateAndGetTargetName(String appName, String serverName) {
+        List<String> targets = domain.getAllReferencedTargetsForApplication(appName);
+        if (targets.isEmpty()) {
+            return serverName;
+        }
+
+        String targetName = targets.get(0);
+        java.util.Optional<DeploymentGroup> optDG = domain.getDeploymentGroups().getDeploymentGroup().
+                stream().filter(d -> d.getName().equals(targetName)).findAny();
+
+        if (optDG.isPresent()) {
+            return optDG.get().getName();
+        }
+
+        return targetName;
     }
 
 

@@ -40,14 +40,15 @@
     holder.
 
 -->
-<!-- Portions Copyright [2016-2022] [Payara Foundation and/or its affiliates] -->
+<!-- Portions Copyright [2016-2024] [Payara Foundation and/or its affiliates] -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>fish.payara.server.internal.core</groupId>
-        <artifactId>nucleus-core</artifactId>
-        <version>6.2023.2-SNAPSHOT</version>
+        <groupId>fish.payara.server.core</groupId>
+        <artifactId>core-parent</artifactId>
+        <version>6.26.0-SNAPSHOT</version>
+        <relativePath>../../../core/core-parent</relativePath>
     </parent>
 
     <groupId>fish.payara.server.core.nucleus</groupId>
@@ -86,10 +87,6 @@
         </developer>
     </developers>
 
-    <properties>
-	<findbugs.exclude>${project.basedir}/exclude.xml</findbugs.exclude>
-    </properties>
-
     <build>
         <resources>
             <resource>
@@ -102,6 +99,7 @@
                     <include>com/sun/enterprise/v3/**/statusNotDAS.html</include>
                     <include>com/sun/enterprise/v3/**/asynch-1F.gif</include>
                     <include>com/sun/enterprise/v3/**/backimage.jpg</include>
+                    <include>fish/payara/enterprise/admin/**/*.properties</include>
                 </includes>
             </resource>
             <resource>
@@ -134,17 +132,14 @@
         <dependency>
             <groupId>fish.payara.server.core.common</groupId>
             <artifactId>glassfish-api</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fish.payara.server.core.common</groupId>
             <artifactId>internal-api</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fish.payara.server.core.security</groupId>
             <artifactId>security-services</artifactId>
-            <version>${project.version}</version>
         </dependency>
 		<!--dependency>
 			<groupId>fish.payara.server.internal.common</groupId>
@@ -154,12 +149,10 @@
         <dependency>
             <groupId>fish.payara.server.core.admin</groupId>
             <artifactId>config-api</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fish.payara.server.core.admin</groupId>
             <artifactId>admin-util</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish.hk2</groupId>
@@ -173,28 +166,24 @@
         <dependency>
             <groupId>fish.payara.server.core.grizzly</groupId>
             <artifactId>nucleus-grizzly-all</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fish.payara.server.core.common</groupId>
             <artifactId>common-util</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fish.payara.server.core.deployment</groupId>
             <artifactId>deployment-common</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>fish.payara.server.internal.test-utils</groupId>
+            <groupId>fish.payara.server.core.test-utils</groupId>
             <artifactId>utils</artifactId>
-            <version>${project.version}</version>
+
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>fish.payara.server.core.flashlight</groupId>
             <artifactId>flashlight-framework</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.kohsuke.metainf-services</groupId>
@@ -212,23 +201,20 @@
         <dependency>
             <groupId>fish.payara.server.core.nucleus</groupId>
             <artifactId>glassfish</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fish.payara.server.core.nucleus</groupId>
             <artifactId>logging</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fish.payara.server.core.common</groupId>
             <artifactId>simple-glassfish-api</artifactId>
-            <version>${project.version}</version>
+
             <scope>provided</scope>
         </dependency>
 	<dependency>
             <groupId>fish.payara.server.core.nucleus</groupId>
             <artifactId>api-exporter</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish.annotations</groupId>
@@ -239,12 +225,10 @@
         <dependency>
             <groupId>fish.payara.server.core.payara-modules</groupId>
             <artifactId>requesttracing-core</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fish.payara.server.core.payara-modules</groupId>
             <artifactId>healthcheck-stuck</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -262,47 +246,19 @@
         <dependency>
             <groupId>fish.payara.server.core.packager</groupId>
             <artifactId>tiger-types</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fish.payara.monitoring-console</groupId>
             <artifactId>monitoring-console-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>fish.payara.transformer</groupId>
+            <artifactId>fish.payara.transformer.payara</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>fish.payara.deployment.transformer</groupId>
+            <artifactId>deployment-transformer-api</artifactId>
+        </dependency>
     </dependencies>
-    
-    <profiles>
-        <!-- We can't use integration points for custom themes here, so overwrite the image file -->
-        <profile>
-            <id>enterprise</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>use-enterprise-backimage.png</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>copy-resources</goal>
-                                </goals>
-                                <configuration>
-                                    <outputDirectory>${basedir}/target/classes/com/sun/enterprise/v3/admin/adapter/</outputDirectory>
-                                    <overwrite>true</overwrite>
-                                    <resources>
-                                        <resource>
-                                            <directory>src/main/java/fish/payara/enterprise/admin/adapter/</directory>
-                                            <includes>
-                                                <include>backimage.jpg</include>
-                                            </includes>
-                                        </resource>
-                                    </resources>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>
 

@@ -1,14 +1,14 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- *    Copyright (c) [2018-2019] Payara Foundation and/or its affiliates. All rights reserved.
+ *    Copyright (c) [2018-2023] Payara Foundation and/or its affiliates. All rights reserved.
  *
  *     The contents of this file are subject to the terms of either the GNU
  *     General Public License Version 2 only ("GPL") or the Common Development
  *     and Distribution License("CDDL") (collectively, the "License").  You
  *     may not use this file except in compliance with the License.  You can
  *     obtain a copy of the License at
- *     https://github.com/payara/Payara/blob/master/LICENSE.txt
+ *     https://github.com/payara/Payara/blob/main/LICENSE.txt
  *     See the License for the specific
  *     language governing permissions and limitations under the License.
  *
@@ -72,12 +72,19 @@ public class WeightedSnapshot extends Snapshot {
     private final long[] values;
     private final double[] normWeights;
     private final double[] quantiles;
+    
+    private ConfigurationProperties configurationProperties;
 
     /**
      * Create a new {@link Snapshot} with the given values.
      *
      * @param values an unordered set of values in the reservoir
      */
+    public WeightedSnapshot(Collection<WeightedSample> values, ConfigurationProperties configurationProperties) {
+        this(values);
+        this.configurationProperties = configurationProperties;
+    }
+    
     public WeightedSnapshot(Collection<WeightedSample> values) {
         final WeightedSample[] copy = values.toArray(new WeightedSample[]{});
 
@@ -102,14 +109,89 @@ public class WeightedSnapshot extends Snapshot {
         }
     }
 
+
+
     /**
-     * Returns the value at the given quantile.
+     * Returns the number of values in the snapshot.
      *
-     * @param quantile a given quantile, in {@code [0..1]}
-     * @return the value in the distribution at {@code quantile}
+     * @return the number of values
      */
     @Override
-    public double getValue(double quantile) {
+    public long size() {
+        return values.length;
+    }
+
+
+    /**
+     * Returns the highest value in the snapshot.
+     *
+     * @return the highest value
+     */
+    @Override
+    public double getMax() {
+        if (values.length == 0) {
+            return 0;
+        }
+        return values[values.length - 1];
+    }
+
+
+    /**
+     * Returns the weighted arithmetic mean of the values in the snapshot.
+     *
+     * @return the weighted arithmetic mean
+     */
+    @Override
+    public double getMean() {
+        if (values.length == 0) {
+            return 0;
+        }
+
+        double sum = 0;
+        for (int i = 0; i < values.length; i++) {
+            sum += values[i] * normWeights[i];
+        }
+        return sum;
+    }
+
+    @Override
+    public PercentileValue[] percentileValues() {
+        PercentileValue[] percentileValues = null;
+        if (configurationProperties != null) {
+            Double[] percentiles = configurationProperties.percentileValues();
+            percentileValues = new PercentileValue[percentiles.length];
+            for (int i = 0; i < percentiles.length; i++) {
+                percentileValues[i] = new PercentileValue(percentiles[i], getValue(percentiles[i]));
+            }
+        } else {
+            double[] percentiles = {0.5, 0.75, 0.95, 0.98, 0.99, 0.999};
+            if (values.length > 0 && quantiles.length > 0 && values.length == quantiles.length) {
+                percentileValues = new PercentileValue[percentiles.length];
+                for (int i = 0; i < percentiles.length; i++) {
+                    percentileValues[i] = new PercentileValue(percentiles[i], getValue(percentiles[i]));
+                }
+            } else {
+                percentileValues = new PercentileValue[percentiles.length];
+                for (int i = 0; i < percentiles.length; i++) {
+                    percentileValues[i] = new PercentileValue(percentiles[i], 0);
+                }
+            }
+        }
+        return percentileValues;
+    }
+
+    @Override
+    public HistogramBucket[] bucketValues() {
+        Double[] buckets = configurationProperties.bucketValues();
+        Arrays.sort(buckets);
+        HistogramBucket[] histogramBuckets = new HistogramBucket[buckets.length];
+        for (int i = 0; i < buckets.length; i++) {
+            histogramBuckets[i] = new HistogramBucket(buckets[i], 0);
+        }
+        return histogramBuckets;
+    }
+
+    private double getValue(double quantile) {
         if (quantile < 0.0 || quantile > 1.0 || Double.isNaN(quantile)) {
             throw new IllegalArgumentException(quantile + " is not in [0..1]");
         }
@@ -133,94 +215,11 @@ public class WeightedSnapshot extends Snapshot {
 
         return values[posx];
     }
-
-    /**
-     * Returns the number of values in the snapshot.
-     *
-     * @return the number of values
-     */
-    @Override
-    public int size() {
-        return values.length;
-    }
-
-    /**
-     * Returns the entire set of values in the snapshot.
-     *
-     * @return the entire set of values
-     */
-    @Override
+    
     public long[] getValues() {
-        return Arrays.copyOf(values, values.length);
+        return values;
     }
 
-    /**
-     * Returns the highest value in the snapshot.
-     *
-     * @return the highest value
-     */
-    @Override
-    public long getMax() {
-        if (values.length == 0) {
-            return 0;
-        }
-        return values[values.length - 1];
-    }
-
-    /**
-     * Returns the lowest value in the snapshot.
-     *
-     * @return the lowest value
-     */
-    @Override
-    public long getMin() {
-        if (values.length == 0) {
-            return 0;
-        }
-        return values[0];
-    }
-
-    /**
-     * Returns the weighted arithmetic mean of the values in the snapshot.
-     *
-     * @return the weighted arithmetic mean
-     */
-    @Override
-    public double getMean() {
-        if (values.length == 0) {
-            return 0;
-        }
-
-        double sum = 0;
-        for (int i = 0; i < values.length; i++) {
-            sum += values[i] * normWeights[i];
-        }
-        return sum;
-    }
-
-    /**
-     * Returns the weighted standard deviation of the values in the snapshot.
-     *
-     * @return the weighted standard deviation value
-     */
-    @Override
-    public double getStdDev() {
-        // two-pass algorithm for variance, avoids numeric overflow
-
-        if (values.length <= 1) {
-            return 0;
-        }
-
-        final double mean = getMean();
-        double variance = 0;
-
-        for (int i = 0; i < values.length; i++) {
-            final double diff = values[i] - mean;
-            variance += normWeights[i] * diff * diff;
-        }
-
-        return Math.sqrt(variance);
-    }
 
     /**
      * Writes the values of the snapshot to the given stream.
@@ -234,6 +233,10 @@ public class WeightedSnapshot extends Snapshot {
                 out.printf("%d%n", value);
             }
         }
+    }
+    
+    public ConfigurationProperties getConfigAdapter() {
+        return this.configurationProperties;
     }
 
     @Override

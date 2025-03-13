@@ -2,14 +2,14 @@
 <!--
  *    DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- *    Copyright (c) [2022] Payara Foundation and/or its affiliates. All rights reserved.
+ *    Copyright (c) 2022-2024 Payara Foundation and/or its affiliates. All rights reserved.
  *
  *    The contents of this file are subject to the terms of either the GNU
  *    General Public License Version 2 only ("GPL") or the Common Development
  *    and Distribution License("CDDL") (collectively, the "License").  You
  *    may not use this file except in compliance with the License.  You can
  *    obtain a copy of the License at
- *    https://github.com/payara/Payara/blob/master/LICENSE.txt
+ *    https://github.com/payara/Payara/blob/main/LICENSE.txt
  *    See the License for the specific
  *    language governing permissions and limitations under the License.
  *
@@ -43,11 +43,9 @@
     <parent>
         <groupId>fish.payara.server.internal.tests</groupId>
         <artifactId>repackaged</artifactId>
-        <version>6.2023.2-SNAPSHOT</version>
+        <version>6.2025.4-SNAPSHOT</version>
     </parent>
-    <groupId>io.smallrye.config</groupId>
     <artifactId>smallrye-config-repackaged</artifactId>
-    <version>2.7.0</version>
     <name>Payara Samples - Payara - smallrye-config repackaged as a module</name>
 
     <build>
@@ -72,7 +70,7 @@
                         <Embed-Dependency>
                             *;scope=compile;inline=true
                         </Embed-Dependency>
-                        <Export-Package>*;version=${project.version}</Export-Package>
+                        <Export-Package>*;version=${smallrye-config.version}</Export-Package>
                         <Private-Package>!*</Private-Package>
                     </instructions>
                     <unpackBundle>true</unpackBundle>
@@ -90,7 +88,7 @@
             <plugin>
                 <groupId>org.eclipse.transformer</groupId>
                 <artifactId>org.eclipse.transformer.maven</artifactId>
-                <version>0.2.0</version>
+                <version>0.2.9</version>
                 <configuration>
                     <classifier>jakartaee9</classifier>
                 </configuration>
@@ -116,91 +114,62 @@
         <dependency>
             <groupId>io.smallrye.config</groupId>
             <artifactId>smallrye-config</artifactId>
-            <version>${project.version}</version>
+            <version>${smallrye-config.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.smallrye.config</groupId>
             <artifactId>smallrye-config-core</artifactId>
-            <version>${project.version}</version>
+            <version>${smallrye-config.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.smallrye.config</groupId>
             <artifactId>smallrye-config-common</artifactId>
-            <version>${project.version}</version>
+            <version>${smallrye-config.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.jboss.logging</groupId>
             <artifactId>jboss-logging</artifactId>
-            <version>3.4.2.Final</version>
+            <version>3.6.1.Final</version>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.smallrye.common</groupId>
             <artifactId>smallrye-common-annotation</artifactId>
-            <version>1.8.0</version>
+            <version>${smallrye-common.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.smallrye.common</groupId>
             <artifactId>smallrye-common-expression</artifactId>
-            <version>1.8.0</version>
+            <version>${smallrye-common.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.smallrye.common</groupId>
             <artifactId>smallrye-common-function</artifactId>
-            <version>1.8.0</version>
+            <version>${smallrye-common.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.smallrye.common</groupId>
             <artifactId>smallrye-common-constraint</artifactId>
-            <version>1.8.0</version>
+            <version>${smallrye-common.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.smallrye.common</groupId>
             <artifactId>smallrye-common-classloader</artifactId>
-            <version>1.8.0</version>
+            <version>${smallrye-common.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm</artifactId>
-            <version>9.2</version>
+            <version>9.7.1</version>
             <optional>true</optional>
         </dependency>
     </dependencies>
-    <profiles>
-        <profile>
-            <!-- generate empty javadoc jar -->
-            <id>release-phase2</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-jar-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>create-empty-javadoc-jar</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                                <configuration>
-                                    <classesDirectory>${project.build.directory}/javadoc</classesDirectory>
-                                    <classifier>javadoc</classifier>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

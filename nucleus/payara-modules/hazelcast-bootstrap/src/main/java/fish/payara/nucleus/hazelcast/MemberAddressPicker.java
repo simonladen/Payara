@@ -1,14 +1,14 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) 2017-2020 Payara Foundation and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017-2023 Payara Foundation and/or its affiliates. All rights reserved.
  *
  * The contents of this file are subject to the terms of either the GNU
  * General Public License Version 2 only ("GPL") or the Common Development
  * and Distribution License("CDDL") (collectively, the "License").  You
  * may not use this file except in compliance with the License.  You can
  * obtain a copy of the License at
- * https://github.com/payara/Payara/blob/master/LICENSE.txt
+ * https://github.com/payara/Payara/blob/main/LICENSE.txt
  * See the License for the specific
  * language governing permissions and limitations under the License.
  *
@@ -115,7 +115,7 @@ public class MemberAddressPicker implements MemberAddressProvider {
     private InetSocketAddress initBindAddress() {
         InetSocketAddress address = new InetSocketAddress(0);
         if (env.isDas() && !env.isMicro() && !config.getDASBindAddress().isEmpty()) {
-            int port = new Integer(config.getDasPort());
+            int port = Integer.valueOf(config.getDasPort());
             address = initAddress(config.getDASBindAddress(), port);
             logger.log(Level.FINE, "Bind address is specified in the configuration so we will use that {0}", address);
         } else if (config.getDiscoveryMode().startsWith("multicast")) {
@@ -132,7 +132,7 @@ public class MemberAddressPicker implements MemberAddressProvider {
         InetSocketAddress address;
         int port = 0;
         if (env.isDas() && !env.isMicro()) {
-            port = new Integer(config.getDasPort());
+            port = Integer.valueOf(config.getDasPort());
             // try setting public address from global Payara config
             address = initAddress(config.getDASPublicAddress(), port);
         } else {
@@ -155,6 +155,14 @@ public class MemberAddressPicker implements MemberAddressProvider {
         }
     }
 
+    static InetAddress findMyAddressOrLocalHost() {
+        InetAddress myAddress = findMyAddress();
+        if (myAddress == null) {
+            return tryLocalHostOrLoopback(0, true).getAddress();
+        }
+        return myAddress;
+    }
+
     private static InetSocketAddress ensureAddress(InetSocketAddress targetAddress, InetSocketAddress sourceAddress,
             LazyHolder<InetAddress> backupAddress, int port) {
         if (targetAddress == null) {
@@ -163,24 +171,26 @@ public class MemberAddressPicker implements MemberAddressProvider {
             } else if (backupAddress.get() != null) {
                 targetAddress = new InetSocketAddress(backupAddress.get(), port);
             } else {
-                targetAddress = tryLocalHostOrLoopback(port);
+                targetAddress = tryLocalHostOrLoopback(port, false);
             }
         }
         return targetAddress;
     }
 
-    private static InetSocketAddress tryLocalHostOrLoopback(int port) {
+    private static InetSocketAddress tryLocalHostOrLoopback(int port, boolean warn) {
         try {
             // ok do the easy thing
-            logger.log(Level.FINE, "Could not find an appropriate address, falling back to local host");
+            logger.log(warn ? Level.WARNING : Level.FINE,
+                    "Could not find an appropriate address, falling back to local host");
             return new InetSocketAddress(InetAddress.getLocalHost(), port);
         } catch (UnknownHostException ex) {
-            logger.log(Level.FINE, "Could not find local host, falling back to loop back address");
+            logger.log(warn ? Level.WARNING : Level.FINE,
+                    "Could not find local host, falling back to loop back address");
             return new InetSocketAddress(InetAddress.getLoopbackAddress(), port);
         }
     }
 
-    static InetAddress findMyAddress() {
+    private static InetAddress findMyAddress() {
         //add to list filtering out docker0
         HashSet<NetworkInterface> possibleInterfaces = new HashSet<>();
         try {

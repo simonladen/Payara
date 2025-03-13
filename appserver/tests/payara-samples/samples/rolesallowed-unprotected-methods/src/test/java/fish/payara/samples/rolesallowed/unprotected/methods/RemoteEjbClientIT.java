@@ -8,7 +8,7 @@
  * and Distribution License("CDDL") (collectively, the "License").  You
  * may not use this file except in compliance with the License.  You can
  * obtain a copy of the License at
- * https://github.com/payara/Payara/blob/master/LICENSE.txt
+ * https://github.com/payara/Payara/blob/main/LICENSE.txt
  * See the License for the specific
  * language governing permissions and limitations under the License.
  *
@@ -90,6 +90,8 @@ public class RemoteEjbClientIT {
             System.out.println(ejb.sayHello());
             Assert.assertTrue(ejb.sayHello().equalsIgnoreCase("Hello Anonymous!"));
         } catch (NamingException ne) {
+            // Print the exception, so we know, where it failed
+            ne.printStackTrace();
             Assert.fail("Failed performing lookup:\n" + ne.getCause());
         }
     }

@@ -10,7 +10,7 @@
   and Distribution License("CDDL") (collectively, the "License").  You
   may not use this file except in compliance with the License.  You can
   obtain a copy of the License at
-  https://github.com/payara/Payara/blob/master/LICENSE.txt
+  https://github.com/payara/Payara/blob/main/LICENSE.txt
   See the License for the specific
   language governing permissions and limitations under the License.
 
@@ -45,7 +45,7 @@
     <parent>
         <groupId>fish.payara.server.internal.ejb</groupId>
         <artifactId>ejb-http-remoting</artifactId>
-        <version>6.2023.2-SNAPSHOT</version>
+        <version>6.2025.4-SNAPSHOT</version>
     </parent>
     
     <artifactId>ejb-http-admin</artifactId>
@@ -66,12 +66,10 @@
         <dependency>
             <groupId>fish.payara.server.core.common</groupId>
             <artifactId>internal-api</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fish.payara.server.core.web</groupId>
             <artifactId>web-glue</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>jakarta.platform</groupId>
@@ -80,12 +78,10 @@
         <dependency>
             <groupId>fish.payara.server.core.deployment</groupId>
             <artifactId>dol</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fish.payara.server.core.nucleus</groupId>
             <artifactId>kernel</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>

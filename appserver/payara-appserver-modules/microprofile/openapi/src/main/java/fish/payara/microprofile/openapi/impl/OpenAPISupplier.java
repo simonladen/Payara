@@ -1,14 +1,14 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) [2020-2022] Payara Foundation and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020-2024 Payara Foundation and/or its affiliates. All rights reserved.
  *
  * The contents of this file are subject to the terms of either the GNU
  * General Public License Version 2 only ("GPL") or the Common Development
  * and Distribution License("CDDL") (collectively, the "License").  You
  * may not use this file except in compliance with the License.  You can
  * obtain a copy of the License at
- * https://github.com/payara/Payara/blob/master/LICENSE.txt
+ * https://github.com/payara/Payara/blob/main/LICENSE.txt
  * See the License for the specific
  * language governing permissions and limitations under the License.
  *
@@ -44,6 +44,7 @@ import static java.util.stream.Collectors.toSet;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -80,8 +81,15 @@ import fish.payara.microprofile.openapi.impl.processor.ConfigPropertyProcessor;
 import fish.payara.microprofile.openapi.impl.processor.FileProcessor;
 import fish.payara.microprofile.openapi.impl.processor.FilterProcessor;
 import fish.payara.microprofile.openapi.impl.processor.ModelReaderProcessor;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 public class OpenAPISupplier implements Supplier<OpenAPI> {
+
+    private static final Logger logger = Logger.getLogger(OpenAPISupplier.class.getName());
 
     private final OpenApiConfiguration config;
     private final String applicationId;
@@ -117,14 +125,14 @@ public class OpenAPISupplier implements Supplier<OpenAPI> {
         }
 
         try {
-            final Parser parser = Globals.get(ApplicationLifecycle.class).getDeployableParser(
-                    archive,
-                    true,
-                    true,
-                    StructuredDeploymentTracing.create(applicationId),
-                    Logger.getLogger(OpenApiService.class.getName())
-            );
-            final Types types = parser.getContext().getTypes();
+            // collect types from this WAR project, including WEB-INF/lib jars
+            Map<String, Type> types = collectTypesFromArchive(archive, applicationId);
+
+            // if configured to scan libs, scan libs of the parent EAR (if available)
+            if (config != null && config.getScanLib()) {
+                Map<String, Type> earLibTypes = collectEarLibTypes(archive.getParentArchive());
+                types.putAll(earLibTypes);
+            }
 
             OpenAPI doc = new OpenAPIImpl();
             try {
@@ -134,7 +142,8 @@ public class OpenAPISupplier implements Supplier<OpenAPI> {
                 doc = new FileProcessor(classLoader).process(doc, config);
                 doc = new ApplicationProcessor(
                         types,
-                        filterTypes(archive, config, types),
+                        filterTypes(archive, types, config != null && config.getScanLib()),
+                        filterTypes(archive, types, false),
                         classLoader
                 ).process(doc, config);
                 if (doc.getPaths() != null && !doc.getPaths().getPathItems().isEmpty()) {
@@ -152,13 +161,65 @@ public class OpenAPISupplier implements Supplier<OpenAPI> {
             throw new RuntimeException("An error occurred while creating the OpenAPI document.", ex);
         }
     }
-    
+
+    private Map<String, Type> collectEarLibTypes(ReadableArchive parentArchive) {
+        Map<String, Type> earLibTypes = new HashMap<>();
+        if (parentArchive != null) {
+            Enumeration<String> entries = parentArchive.entries();
+            while (entries.hasMoreElements()) {
+                String entry = entries.nextElement();
+                // scan only lib/*.jar libraries
+                if (entry.startsWith("lib/") && entry.endsWith(".jar")) {
+                    try {
+                        Map<String, Type> libTypes = collectTypesFromArchive(parentArchive.getSubArchive(entry),
+                                applicationId + "-parent-" + entry);
+                        earLibTypes.putAll(libTypes);
+                    } catch (IOException ex) {
+                        logger.log(Level.SEVERE, "Unable to parse EAR archive '" + entry + "': " + ex.getMessage(), ex);
+                    }
+                }
+            }
+        }
+        return earLibTypes;
+    }
+
+    private Map<String, Type> collectTypesFromArchive(ReadableArchive archive, String entryId) throws IOException {
+        Map<String, Type> types = new HashMap<>();
+        Parser earLibParser;
+        earLibParser = Globals.get(ApplicationLifecycle.class).getDeployableParser(archive,
+                true,
+                true,
+                StructuredDeploymentTracing.create(entryId),
+                logger
+        );
+        types.putAll(typesToMap(earLibParser.getContext().getTypes(), archive.getURI()));
+        return types;
+    }
+
+    public static Map<String, Type> typesToMap(Types types, URI archive) {
+        return types.getAllTypes().stream()
+                // We only care about classes defined by the application. With the switch to OSGi R8 and allowing Felix
+                // to import/export JDK classes we need to filter out said JDK classes as (currently) HK2 does not do
+                // so for us. Collecting to a map based on name without filtering would lead to a conflict between
+                // the ClassModel and the 'xType' e.g. the ClassModel for the 'Enum' class and the 'EnumType'
+                // used for modelling things of type 'Enum' would both have the name 'java.lang.Enum'
+                .filter(type -> type.getDefiningURIs().stream().anyMatch(
+                        definingUri -> definingUri.getPath().contains(archive.getPath())))
+                .collect(Collectors.toMap((t) -> t.getName(), Function.identity(), (first, second) -> {
+                    logger.log(Level.FINE, "Duplicate type {0} detected while performing OpenAPI scanning, will use the first.",
+                            first.getName());
+                    logger.log(Level.FINER, "First duplicate type: {0}\n\nSecond duplicate type: {1}",
+                            new Object[]{first.toString(), second.toString()});
+                    return first;
+                }));
+    }
 
     /**
      * @return a list of all classes in the archive.
      */
-    private Set<Type> filterTypes(ReadableArchive archive, OpenApiConfiguration config, Types hk2Types) {
-        Set<Type> types = new HashSet<>(filterLibTypes(config, hk2Types, archive));
+    private Set<Type> filterTypes(ReadableArchive archive, Map<String, Type> hk2Types, boolean scanLibs) {
+        Set<Type> types = new HashSet<>();
+        types.addAll(filterLibTypes(hk2Types, archive, scanLibs));
         types.addAll(
                 Collections.list(archive.entries()).stream()
                         // Only use the classes
@@ -166,7 +227,7 @@ public class OpenAPISupplier implements Supplier<OpenAPI> {
                         // Remove the WEB-INF/classes and return the proper class name format
                         .map(clazz -> clazz.replaceAll("WEB-INF/classes/", "").replace("/", ".").replace(".class", ""))
                         // Fetch class type
-                        .map(clazz -> hk2Types.getBy(clazz))
+                        .map(clazz -> hk2Types.get(clazz))
                         // Don't return null classes
                         .filter(Objects::nonNull)
                         .collect(toSet())
@@ -175,17 +236,29 @@ public class OpenAPISupplier implements Supplier<OpenAPI> {
     }
 
     private Set<Type> filterLibTypes(
-            OpenApiConfiguration config,
-            Types hk2Types,
-            ReadableArchive archive) {
+            Map<String, Type> hk2Types,
+            ReadableArchive archive,
+            boolean scanLibs
+    ) {
         Set<Type> types = new HashSet<>();
-        if (config != null && config.getScanLib()) {
-            Enumeration<String> subArchiveItr = archive.entries();
+        if (scanLibs) {
+            // add libraries from WAR's /WEB-INF/lib/*.jar
+            addFoundClasses(archive, hk2Types, "WEB-INF/lib/", types);
+
+            // add here also EAR's /lib/*.jar
+            addFoundClasses(archive.getParentArchive(), hk2Types, "lib/", types);
+        }
+        return types;
+    }
+
+    private void addFoundClasses(ReadableArchive archiveToScan, Map<String, Type> hk2Types, String prefix, Set<Type> types) {
+        if (archiveToScan != null) {
+            Enumeration<String> subArchiveItr = archiveToScan.entries();
             while (subArchiveItr.hasMoreElements()) {
                 String subArchiveName = subArchiveItr.nextElement();
-                if (subArchiveName.startsWith("WEB-INF/lib/") && subArchiveName.endsWith(".jar")) {
+                if (subArchiveName.startsWith(prefix) && subArchiveName.endsWith(".jar")) {
                     try {
-                        ReadableArchive subArchive = archive.getSubArchive(subArchiveName);
+                        ReadableArchive subArchive = archiveToScan.getSubArchive(subArchiveName);
                         types.addAll(
                                 Collections.list(subArchive.entries())
                                         .stream()
@@ -194,7 +267,7 @@ public class OpenAPISupplier implements Supplier<OpenAPI> {
                                         // return the proper class name format
                                         .map(clazz -> clazz.replace("/", ".").replace(".class", ""))
                                         // Fetch class type
-                                        .map(clazz -> hk2Types.getBy(clazz))
+                                        .map(clazz -> hk2Types.get(clazz))
                                         // Don't return null classes
                                         .filter(Objects::nonNull)
                                         .collect(toSet())
@@ -205,7 +278,6 @@ public class OpenAPISupplier implements Supplier<OpenAPI> {
                 }
             }
         }
-        return types;
     }
 
     private List<URL> getServerURL(String contextRoot) {

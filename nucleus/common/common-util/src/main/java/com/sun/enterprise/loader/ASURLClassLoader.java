@@ -37,7 +37,7 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
- // Portions Copyright [2016-2020] [Payara Foundation and/or its affiliates]
+ // Portions Copyright [2016-2024] [Payara Foundation and/or its affiliates]
 
 package com.sun.enterprise.loader;
 
@@ -52,6 +52,8 @@ import org.glassfish.hk2.api.PreDestroy;
 import java.io.*;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
+import org.glassfish.hk2.utilities.CleanerFactory;
+import java.lang.ref.WeakReference;
 import java.net.*;
 import java.nio.file.Path;
 import java.security.*;
@@ -94,6 +96,7 @@ public class ASURLClassLoader extends CurrentBeforeParentClassLoader
 
     /** logger for this class */
     private static final Logger _logger = CULoggerInfo.getLogger();
+    private static final Runtime.Version RUNTIME_VERSION = Runtime.Version.parse(System.getProperty("java.version"));
 
     /*
        list of url entries of this class loader. Using LinkedHashSet instead of original ArrayList
@@ -433,7 +436,7 @@ public class ASURLClassLoader extends CurrentBeforeParentClassLoader
                          *prevent the JDK's JarURLConnection caching from
                          *locking the jar file until JVM exit.
                          */
-                        InternalURLStreamHandler handler = new InternalURLStreamHandler(res, name);
+                        InternalURLStreamHandler handler = new InternalURLStreamHandler(this, res, name);
 
                         // Create a new sub URL from the resource URL (i.e. res.source). To avoid double encoding
                         // (see https://glassfish.dev.java.net/issues/show_bug.cgi?id=13045)
@@ -612,21 +615,32 @@ public class ASURLClassLoader extends CurrentBeforeParentClassLoader
         return AccessController.doPrivileged((PrivilegedAction<byte[]>) () -> {
             try {
                 if (res.isJar) { // It is a jarfile..
-                    JarFile zip = res.zip;
-                    JarEntry entry = zip.getJarEntry(entryName);
+                    JarEntry entry = res.zip.getJarEntry(entryName);
                     if (entry != null) {
-                        InputStream classStream = zip.getInputStream(entry);
-                        byte[] classData = getClassData(classStream);
+                        byte[] classData = getClassData(res.zip.getInputStream(entry));
                         res.setProtectionDomain(ASURLClassLoader.this, entry.getCertificates());
                         return classData;
                     }
                 } else { // Its a directory....
-                    File classFile = new File (res.file, entryName.replace('/', File.separatorChar));
+                    String entryPath = entryName.replace('/', File.separatorChar);
+                    File classFile = new File (res.file, entryPath);
                     if (classFile.exists()) {
                         try (InputStream classStream = new FileInputStream(classFile)) {
                             byte[] classData = getClassData(classStream);
                             res.setProtectionDomain(ASURLClassLoader.this, null);
                             return classData;
+                        }
+                    }
+                    
+                    File multiVersionDir = new File(res.file, "META-INF/versions/");
+                    if (multiVersionDir.exists()) {
+                        File multiVersionClassFile = new File(multiVersionDir, entryPath);
+                        if (multiVersionClassFile.exists()) {
+                            try (InputStream classStream = new FileInputStream(multiVersionClassFile)) {
+                                byte[] classData = getClassData(classStream);
+                                res.setProtectionDomain(ASURLClassLoader.this, null);
+                                return classData;
+                            }
                         }
                     }
                 }
@@ -861,7 +875,7 @@ public class ASURLClassLoader extends CurrentBeforeParentClassLoader
          */
         if (stream != null) {
             if (! (stream instanceof SentinelInputStream)) {
-                stream = new SentinelInputStream(stream);
+                stream = new SentinelInputStream(this, stream);
             }
         }
         return stream;
@@ -884,7 +898,8 @@ public class ASURLClassLoader extends CurrentBeforeParentClassLoader
          * @throws IOException from parent
          */
         public ProtectedJarFile(File file) throws IOException {
-            super(file);
+            super(file, true, OPEN_READ, RUNTIME_VERSION);
+            registerCloseEvent();
         }
 
         /**
@@ -920,17 +935,14 @@ public class ASURLClassLoader extends CurrentBeforeParentClassLoader
             super.close();
         }
 
-        /**
-         * @see java.lang.Object#finalize()
-         */
-        @Override
-        protected void finalize() throws IOException {
-            reallyClose();
-            try {
-                super.finalize();
-            } catch (Throwable t ) {
-                throw new IOException(t);
-            }
+        public final void registerCloseEvent() {
+            CleanerFactory.create().register(this, () -> {
+                try {
+                    reallyClose();
+                } catch (IOException ex) {
+                    _logger.log(Level.WARNING, null, ex);
+                }
+            });
         }
     }
 
@@ -1074,11 +1086,7 @@ public class ASURLClassLoader extends CurrentBeforeParentClassLoader
     private synchronized void closeOpenStreams() {
         SentinelInputStream[] toClose = streams.toArray(new SentinelInputStream[0]);
         for (SentinelInputStream s : toClose) {
-            try {
-                s.closeWithWarning();
-            } catch (IOException ioe) {
-                _logger.log(Level.WARNING, CULoggerInfo.exceptionClosingStream, ioe);
-            }
+            s.closeWithWarning();
         }
         streams.clear();
     }
@@ -1090,21 +1098,24 @@ public class ASURLClassLoader extends CurrentBeforeParentClassLoader
      * @author vtsyganok
      * @author tjquinn
      */
-    protected final class SentinelInputStream extends FilterInputStream {
+    protected static final class SentinelInputStream extends FilterInputStream {
         private volatile boolean closed = false;
-        private final Throwable throwable;
+        private volatile Throwable throwable;
+        private final WeakReference<ASURLClassLoader> loader;
 
         /**
          * Constructs new FilteredInputStream which reports InputStreams not closed properly.
-         * When the garbage collector runs the finalizer.  If the stream is still open this class will
+         * When the garbage collector runs the cleaner.  If the stream is still open this class will
          * report a stack trace showing where the stream was opened.
          *
          * @param in - InputStream to be wrapped
          */
-        protected SentinelInputStream(final InputStream in) {
+        protected SentinelInputStream(ASURLClassLoader loader, final InputStream in) {
             super(in);
             throwable = new Throwable();
-            getStreams().add(this);
+            this.loader = new WeakReference<>(loader);
+            loader.streams.add(this);
+            registerStopEvent();
         }
 
         /**
@@ -1116,34 +1127,14 @@ public class ASURLClassLoader extends CurrentBeforeParentClassLoader
         }
 
         /**
-         * Invoked by Garbage Collector. If underlying InputStream was not closed properly,
+         * Callback invoked by Garbage Collector. If underlying InputStream was not closed properly,
          * the stack trace of the constructor will be logged!
          *
          * 'closed' is 'volatile', but it's a race condition to check it and how this code
          * relates to _close() is unclear.
          */
-        @Override
-        protected void finalize() throws Throwable {
-            if (!closed && this.in != null){
-                try {
-                    in.close();
-                }
-                catch (IOException ignored){
-                    //Cannot do anything here.
-                }
-                //Well, give them a stack trace!
-                report();
-            }
-            super.finalize();
-        }
-
-        /**
-         * Returns the vector of open streams; creates it if needed.
-         *
-         * @return Vector<SentinelInputStream> holding open streams
-         */
-        private List<SentinelInputStream> getStreams() {
-            return streams;
+        public final void registerStopEvent() {
+            CleanerFactory.create().register(this, () -> closeWithWarning());
         }
 
         private synchronized void _close() throws IOException {
@@ -1153,20 +1144,35 @@ public class ASURLClassLoader extends CurrentBeforeParentClassLoader
             // race condition with above check, but should have no harmful effects
 
             closed = true;
-            getStreams().remove(this);
+            throwable = null;
+            if (loader.get() != null) {
+                loader.get().streams.remove(this);
+            }
             super.close();
         }
 
-        private void closeWithWarning() throws IOException {
-            _close();
-            report();
+        private void closeWithWarning() {
+            if ( closed ) {
+                return;
+            }
+            
+            // stores the internal Throwable as it will be set to null in the _close method
+            Throwable localThrowable = this.throwable;
+            
+            try {
+                _close();
+            } catch (IOException ioe) {
+                _logger.log(Level.WARNING, CULoggerInfo.exceptionClosingStream, ioe);
+            }
+            
+            report(localThrowable);
         }
 
         /**
          * Report "left-overs"!
          */
-        private void report(){
-            _logger.log(Level.WARNING, CULoggerInfo.inputStreamFinalized, this.throwable);
+        private void report(Throwable localThrowable) {
+            _logger.log(Level.WARNING, CULoggerInfo.inputStreamFinalized, localThrowable);
         }
     }
     /**
@@ -1176,9 +1182,10 @@ public class ASURLClassLoader extends CurrentBeforeParentClassLoader
      *
      * @author fkieviet
      */
-    private class InternalJarURLConnection extends JarURLConnection {
+    private static class InternalJarURLConnection extends JarURLConnection {
         private final URLEntry mRes;
         private final String mName;
+        private final WeakReference<ASURLClassLoader> loader;
 
         /**
          * Constructor
@@ -1188,11 +1195,12 @@ public class ASURLClassLoader extends CurrentBeforeParentClassLoader
          * @param name String
          * @throws MalformedURLException from super class
          */
-        public InternalJarURLConnection(URL url, URLEntry res, String name)
+        public InternalJarURLConnection(ASURLClassLoader loader, URL url, URLEntry res, String name)
             throws MalformedURLException {
             super(url);
             mRes = res;
             mName = name;
+            this.loader = new WeakReference<>(loader);
         }
 
         /**
@@ -1225,7 +1233,7 @@ public class ASURLClassLoader extends CurrentBeforeParentClassLoader
             if (entry == null) {
                 throw new IOException("no entry called " + mName + " found in " + mRes.source);
             }
-            return new SentinelInputStream(mRes.zip.getInputStream(entry));
+            return new SentinelInputStream(loader.get(), mRes.zip.getInputStream(entry));
         }
     }
 
@@ -1238,10 +1246,11 @@ public class ASURLClassLoader extends CurrentBeforeParentClassLoader
      *
      * @author fkieviet
      */
-    private class InternalURLStreamHandler extends URLStreamHandler {
+    private static class InternalURLStreamHandler extends URLStreamHandler {
         /** must be 'volatile' for thread visibility */
         private volatile URL   mURL;
         private final URLEntry mRes;
+        private final WeakReference<ASURLClassLoader> loader;
 
         /**
          * Constructor
@@ -1249,8 +1258,9 @@ public class ASURLClassLoader extends CurrentBeforeParentClassLoader
          * @param res URLEntry
          * @param name String
          */
-        public InternalURLStreamHandler(URLEntry res, String name) {
+        public InternalURLStreamHandler(ASURLClassLoader loader, URLEntry res, String name) {
             mRes = res;
+            this.loader = new WeakReference<>(loader);
         }
 
         /**
@@ -1272,7 +1282,7 @@ public class ASURLClassLoader extends CurrentBeforeParentClassLoader
                     assert (entryName.startsWith("/"));
                     entryName = entryName.substring(1);
                 }
-                return new InternalJarURLConnection(u, mRes, entryName);
+                return new InternalJarURLConnection(loader.get(), u, mRes, entryName);
             } catch (URISyntaxException e) {
                 throw new IOException(e);
             }

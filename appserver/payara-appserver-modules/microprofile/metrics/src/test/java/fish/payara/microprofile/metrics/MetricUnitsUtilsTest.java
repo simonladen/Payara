@@ -8,7 +8,7 @@
  *  and Distribution License("CDDL") (collectively, the "License").  You
  *  may not use this file except in compliance with the License.  You can
  *  obtain a copy of the License at
- *  https://github.com/payara/Payara/blob/master/LICENSE.txt
+ *  https://github.com/payara/Payara/blob/main/LICENSE.txt
  *  See the License for the specific
  *  language governing permissions and limitations under the License.
  *
@@ -115,11 +115,6 @@ public class MetricUnitsUtilsTest {
         assertScalesToBytes(1250, 0.00001, MetricUnits.GIGABITS);
     }
 
-    @Test
-    public void kibibitsToBytes() {
-        assertScalesToBytes(128, 1, MetricUnits.KIBIBITS);
-        assertScalesToBytes(1024, 8, MetricUnits.KIBIBITS);
-    }
 
     @Test
     public void mebibitsToBytes() {
@@ -151,12 +146,6 @@ public class MetricUnitsUtilsTest {
     public void megabytesToBytes() {
         assertScalesToBytes(1000 * 1000, 1, MetricUnits.MEGABYTES);
         assertScalesToBytes(100 * 1000, 0.1, MetricUnits.MEGABYTES);
-    }
-
-    @Test
-    public void gigabytesToBytes() {
-        assertScalesToBytes(1000 * 1000 * 1000, 1, MetricUnits.GIGABYTES);
-        assertScalesToBytes(4200L * 1000 * 1000, 4.2, MetricUnits.GIGABYTES);
     }
 
     @Test

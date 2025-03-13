@@ -55,7 +55,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// Portions Copyright [2016-2019] [Payara Foundation and/or its affiliates]
+// Portions Copyright 2016-2024 Payara Foundation and/or its affiliates
 
 package org.apache.catalina.session;
 
@@ -260,6 +260,15 @@ public abstract class PersistentManagerBase extends ManagerBase implements Lifec
         if ((this.getStore() != null)
             && (this.getStore() instanceof StoreBase)) {
             ((StoreBase) this.getStore()).processExpires();
+        }
+    }
+
+    /**
+     * Perform the session backgroud process to validate values from session storage.
+     */
+    public void backgroundSessionUpdate() {
+        if (store.isHighAvailability()) {
+            this.updateSession();
         }
     }
 
@@ -600,6 +609,18 @@ public abstract class PersistentManagerBase extends ManagerBase implements Lifec
         final List<Session> sessions = findSessions();
         for (final Session session1 : sessions) {
             StandardSession session = (StandardSession) session1;
+            if (store.isHighAvailability()) {
+                try {
+                    //verify if session also is on the store and compare lastAccessTime and thisAccessedTime
+                    StandardSession sessionFromStore = (StandardSession)
+                            processWithinWebClassLoader(() -> store.load(session.getId()));
+                    if (sessionFromStore != null) {
+                        compareAndUpdateAccessedTime(session, sessionFromStore);
+                    }
+                } catch (Exception e) {
+                    log.log(Level.INFO, "Caught exception attempting to load session from store", e);
+                }
+            }
             if(!session.getIsValid() || session.hasExpired()) {
                 if(session.lockBackground()) {
                     try {
@@ -610,7 +631,30 @@ public abstract class PersistentManagerBase extends ManagerBase implements Lifec
                 }
             }            
         }
-    }        
+    }
+
+    /**
+     * Verifies available sessions and verifies if from the storage same session was updated from 
+     * another instance from the cluster.
+     */
+    protected void updateSession() {
+        final List<Session> sessions = findSessions();
+        for (final Session session1 : sessions) {
+            StandardSession session = (StandardSession) session1;
+            try {
+                if(session != null) {
+                    //verify if session also is on the store and compare lastAccessTime and thisAccessedTime
+                    StandardSession sessionFromStore = (StandardSession)
+                            processWithinWebClassLoader(() -> store.load(session.getId()));
+                    if (sessionFromStore != null) {
+                        compareAndUpdateAccessedTime(session, sessionFromStore);
+                    }
+                }
+            } catch (Exception e) {
+                log.log(Level.INFO, "Caught exception attempting to load session from store", e);
+            }
+        }
+    }
 
 
     /**
@@ -728,14 +772,41 @@ public abstract class PersistentManagerBase extends ManagerBase implements Lifec
         //6406580 END        
 
         Session session = super.findSession(id);
-        if (session != null)
+
+        if (session != null) {
+            if (store.isHighAvailability()) {
+                try {
+                    //verify if session also is on the store and compare lastAccessTime and thisAccessedTime
+                    Session sessionFromStore = processWithinWebClassLoader(() -> store.load(session.getId()));
+                    if (sessionFromStore != null) {
+                        compareAndUpdateAccessedTime((StandardSession) session, (StandardSession) sessionFromStore);
+                    }
+                } catch (Exception e) {
+                    log.log(Level.INFO, "Caught exception attempting to load session from store", e);
+                }
+            }
             return (session);
+        }
 
         // See if the Session is in the Store
-        session = swapIn(id);
-        return (session);
+        return swapIn(id);
+    }
 
-    }       
+    /**
+     * This method compare both sessions and assign lastAccessTime and accessedTime if conditions are true.
+     * @param currentSession
+     * @param sessionFromStore
+     */
+    public void compareAndUpdateAccessedTime(StandardSession currentSession, StandardSession sessionFromStore) {
+        //Greater than or equal assign new value to update lastaccesstime saved on other instances from the cluster
+        if (sessionFromStore.getLastAccessedTimeInternal() >= currentSession.getLastAccessedTimeInternal()) {
+            currentSession.setLastAccessedTime(sessionFromStore.getLastAccessedTimeInternal());
+        }
+        //Greater than or equal assign new value to update thisAccessTime saved on other instances from the cluster
+        if (sessionFromStore.getThisAccessedTime() >= currentSession.getThisAccessedTime()) {
+            currentSession.setThisAccessedTime(sessionFromStore.getThisAccessedTime());
+        }
+    }
     
     /**
      * Return the active Session, associated with this Manager, with the
@@ -987,7 +1058,15 @@ public abstract class PersistentManagerBase extends ManagerBase implements Lifec
      * @param version The requested session version
      */
     protected Session swapIn(String id, String version) throws IOException {
+        return processWithinWebClassLoader(() -> doSwapIn(id, version));
+    }
 
+    @FunctionalInterface
+    interface ThrowingSupplier<T, E extends Exception> {
+        T get() throws E;
+    }
+
+    private <T, E extends Exception> T processWithinWebClassLoader(ThrowingSupplier<T, E> supplier) throws E {
         ClassLoader webappCl = null;
         ClassLoader curCl = null;
 
@@ -997,20 +1076,20 @@ public abstract class PersistentManagerBase extends ManagerBase implements Lifec
             curCl = Thread.currentThread().getContextClassLoader();
         }
 
-        Session sess = null;
+        T result = null;
 
         if (webappCl != null && curCl != webappCl) {
             try {
                 Thread.currentThread().setContextClassLoader(webappCl);
-                sess = doSwapIn(id, version);
+                result = supplier.get();
             } finally {
                 Thread.currentThread().setContextClassLoader(curCl);
             }
         } else {
-            sess = doSwapIn(id, version);
+            result = supplier.get();
         }
 
-        return sess;
+        return result;
     }
 
     /**

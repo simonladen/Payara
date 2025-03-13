@@ -8,7 +8,7 @@
  * and Distribution License("CDDL") (collectively, the "License").  You
  * may not use this file except in compliance with the License.  You can
  * obtain a copy of the License at
- * https://github.com/payara/Payara/blob/master/LICENSE.txt
+ * https://github.com/payara/Payara/blob/main/LICENSE.txt
  * See the License for the specific
  * language governing permissions and limitations under the License.
  *
@@ -112,7 +112,7 @@ public class ModelInvariantsTest {
 
     @Test
     public void addKeyValueIgnoresNull() {
-        BiPredicate<Extensible<?>, String> hasExtension = (obj, key) -> obj.getExtensions().containsKey(key);
+        BiPredicate<Extensible<?>, String> hasExtension = (obj, key) -> obj.getExtensions() != null && obj.getExtensions().containsKey(key);
         assertAddIgnoresNull(new CallbackImpl(), Callback::addPathItem, Callback::hasPathItem);
         assertAddIgnoresNull(new CallbackImpl(), Callback::addExtension, hasExtension);
         assertAddIgnoresNull(new ExampleImpl(), Example::addExtension,  hasExtension);

@@ -40,17 +40,18 @@
     holder.
 
 -->
-<!--"Portions Copyright [2017-2022] [Payara Foundation and/or its affiliates]" -->
+<!-- Portions Copyright 2017-2023 Payara Foundation and/or its affiliates -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>fish.payara.server.internal.grizzly</groupId>
-        <artifactId>nucleus-grizzly</artifactId>
-        <version>6.2023.2-SNAPSHOT</version>
+        <groupId>fish.payara.server.core</groupId>
+        <artifactId>core-parent</artifactId>
+        <version>6.26.0-SNAPSHOT</version>
+        <relativePath>../../../core/core-parent</relativePath>
     </parent>
-    
+
     <groupId>fish.payara.server.core.grizzly</groupId>
     <artifactId>nucleus-grizzly-all</artifactId>
     <name>Nucleus Grizzly jars Combining</name>
@@ -69,8 +70,8 @@
     </developers>
 
     <properties>
-        <gmbal.grizzly.version>3.0.0-b023</gmbal.grizzly.version>
-        <findbugs.skip>true</findbugs.skip>
+        <gmbal.grizzly.version>4.0.3</gmbal.grizzly.version>
+        <jar.manifest></jar.manifest>
     </properties>    
 
     <build>       
@@ -100,7 +101,7 @@
                         </goals>
                         <configuration>
                             <instructions>
-                                <Import-Package>*</Import-Package>
+                                <Import-Package>!android.os, sun.security.ssl; resolution:=optional, *</Import-Package>
                                 <DynamicImport-Package>*</DynamicImport-Package>
                                 <Export-Package>org.glassfish.grizzly.*</Export-Package>
                                 <Private-Package>org.glassfish.grizzly.*</Private-Package>
@@ -141,7 +142,6 @@
         <dependency>
             <groupId>fish.payara.server.core.grizzly</groupId>
             <artifactId>grizzly-config</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish.gmbal</groupId>
@@ -150,34 +150,4 @@
             <scope>provided</scope>
         </dependency>        
     </dependencies>
-
-    <profiles>
-        <profile>
-            <!-- generate empty javadoc jar -->
-            <id>release-phase2</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-jar-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>create-empty-javadoc-jar</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                                <configuration>
-                                    <classesDirectory>${project.build.directory}/javadoc</classesDirectory>
-                                    <classifier>javadoc</classifier>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

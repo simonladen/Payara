@@ -6,7 +6,7 @@
  * and Distribution License("CDDL") (collectively, the "License").  You
  * may not use this file except in compliance with the License.  You can
  * obtain a copy of the License at
- * https://github.com/payara/Payara/blob/master/LICENSE.txt
+ * https://github.com/payara/Payara/blob/main/LICENSE.txt
  * See the License for the specific
  * language governing permissions and limitations under the License.
  *
@@ -44,6 +44,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.jar.JarFile;
 
 /**
@@ -70,9 +73,10 @@ public class NonCachedJarStreamHandler extends URLStreamHandler {
             return url;
         }
         try {
-            return new URL(url, url.toExternalForm(), INSTANCE);
-        } catch (MalformedURLException ex) {
-            throw new IllegalArgumentException(ex);
+            return AccessController.doPrivileged((PrivilegedExceptionAction<URL>)
+                    () -> new URL(url, url.toExternalForm(), INSTANCE));
+        } catch (PrivilegedActionException ex) {
+            throw new IllegalArgumentException(ex.getException());
         }
     }
 

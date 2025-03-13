@@ -38,7 +38,7 @@
  * holder.
  */
 
-// Portions Copyright [2016-2022] [Payara Foundation and/or affiliates]
+// Portions Copyright 2016-2024 Payara Foundation and/or affiliates
 
 package com.sun.appserv.server.util;
 
@@ -46,7 +46,9 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * This class provides static methods to make accessible the version as well as
@@ -88,7 +90,7 @@ public class Version {
                 })) {
                     FileReader fr = null;
                     try {
-                        fr = new FileReader(f);
+                        fr = new FileReader(f, StandardCharsets.UTF_8);
                         Properties p = new Properties();
                         p.load(fr);
                         VERSION_PROPS.add(p);
@@ -143,11 +145,11 @@ public class Version {
      * Returns version
      */
     public static String getVersion() {
-        StringBuilder sb = new StringBuilder(getProductName());
-        sb.append(" ").append(getVersionPrefix());
-        sb.append(" ").append(getVersionNumber());
-        sb.append(" ").append(getVersionSuffix());
-        return sb.toString();
+        String[] versionComponents = {getProductName(), getVersionPrefix(), getVersionNumber(), getVersionSuffix()};
+        return Arrays.stream(versionComponents)
+                .filter(component -> !component.isEmpty())
+                .collect(Collectors.joining(" "))
+                .trim();
     }
 
     /**
@@ -161,7 +163,7 @@ public class Version {
         String v;
         try {
             if (min != null && min.length() > 0 && Integer.parseInt(min) >= 0) {
-                if (upd != null && upd.length() > 0 && Integer.parseInt(upd) >= 0) {
+                if (upd != null && upd.length() > 0) {
                     v = maj + "." + min + "." + upd;
                 } else {
                     v = maj + "." + min;
@@ -204,14 +206,14 @@ public class Version {
      * Returns Minor version
      */
     public static String getMinorVersion() {
-        return getProperty(MINOR_VERSION_KEY, "0").replace("-SNAPSHOT", "");
+        return getProperty(MINOR_VERSION_KEY, "0");
     }
 
     /**
      * Returns Update version
      */
     public static String getUpdateVersion() {
-        return getProperty(UPDATE_VERSION_KEY, "0");
+        return getProperty(UPDATE_VERSION_KEY, "0").replace("-SNAPSHOT", "");
     }
 
     /**

@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2020-2021 Payara Foundation and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020-2024 Payara Foundation and/or its affiliates. All rights reserved.
  *
  * The contents of this file are subject to the terms of either the GNU
  * General Public License Version 2 only ("GPL") or the Common Development
  * and Distribution License("CDDL") (collectively, the "License").  You
  * may not use this file except in compliance with the License.  You can
  * obtain a copy of the License at
- * https://github.com/payara/Payara/blob/master/LICENSE.txt
+ * https://github.com/payara/Payara/blob/main/LICENSE.txt
  * See the License for the specific
  * language governing permissions and limitations under the License.
  *
@@ -153,9 +153,10 @@ public class ClusteredConfig extends MembershipAdapter {
     public void clearSharedConfiguration(String name) {
         HazelcastInstance hzInstance = hzCore.getInstance();
         if (hzInstance != null) { // can be null during shutdown
-            String instance = instanceName(hzInstance.getCluster().getLocalMember());
+            Member localMember = hzInstance.getCluster().getLocalMember();
+            String instance = instanceName(localMember);
             String mapName = CONFIGURATION_PREFIX + name;
-            if (instance != null) {
+            if (instance != null && !localMember.isLiteMember()) {
                 hzInstance.getReplicatedMap(mapName).remove(instance);
             }
         }

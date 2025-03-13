@@ -1,14 +1,14 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- *    Copyright (c) [2018-2021] Payara Foundation and/or its affiliates. All rights reserved.
+ *    Copyright (c) [2018-2023] Payara Foundation and/or its affiliates. All rights reserved.
  *
  *     The contents of this file are subject to the terms of either the GNU
  *     General Public License Version 2 only ("GPL") or the Common Development
  *     and Distribution License("CDDL") (collectively, the "License").  You
  *     may not use this file except in compliance with the License.  You can
  *     obtain a copy of the License at
- *     https://github.com/payara/Payara/blob/master/LICENSE.txt
+ *     https://github.com/payara/Payara/blob/main/LICENSE.txt
  *     See the License for the specific
  *     language governing permissions and limitations under the License.
  *
@@ -44,11 +44,15 @@ import fish.payara.microprofile.metrics.MetricsService.MetricsContext;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.spi.InjectionPoint;
 import org.eclipse.microprofile.metrics.MetricRegistry;
 import static org.eclipse.microprofile.metrics.MetricRegistry.Type.APPLICATION;
 import static org.eclipse.microprofile.metrics.MetricRegistry.Type.BASE;
 import static org.eclipse.microprofile.metrics.MetricRegistry.Type.VENDOR;
+
+import org.eclipse.microprofile.metrics.annotation.RegistryScope;
 import org.eclipse.microprofile.metrics.annotation.RegistryType;
 import org.glassfish.internal.api.Globals;
 
@@ -63,8 +67,16 @@ public class MetricRegistryProducer {
     }
 
     @Produces
-    public MetricRegistry getDefaultRegistry() {
-        return getApplicationRegistry();
+    @Default
+    @RegistryScope
+    public MetricRegistry getMetricRegistry(InjectionPoint injectionPoint) {
+        RegistryScope registryScope = injectionPoint.getAnnotated().getAnnotation(RegistryScope.class);
+        if(registryScope == null) {
+            return getApplicationRegistry();
+        } else {
+            String customScope = registryScope.scope();
+            return getContext().getOrCreateRegistry(customScope);
+        }
     }
 
     @Produces

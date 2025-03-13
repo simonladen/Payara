@@ -9,7 +9,7 @@
     and Distribution License("CDDL") (collectively, the "License").  You
     may not use this file except in compliance with the License.  You can
     obtain a copy of the License at
-    https://github.com/payara/Payara/blob/master/LICENSE.txt
+    https://github.com/payara/Payara/blob/main/LICENSE.txt
     See the License for the specific
     language governing permissions and limitations under the License.
 
@@ -116,6 +116,12 @@
                       label="$resource{i18n_microprofile.config.ordinal.configuration.secretDirectory}"> 
               <sun:textField id="endPoint" columns="$int{40}" maxLength="250" 
                            text="#{pageSession.microprofileConfigMap['secretDirOrdinality']}"/>
+        </sun:property>
+
+        <sun:property id="tomlOrdinalProp" labelAlign="left" noWrap="#{true}" overlapLabel="#{false}"
+                      label="$resource{i18n_microprofile.config.ordinal.configuration.toml}">
+              <sun:textField id="endPoint" columns="$int{40}" maxLength="250"
+                           text="#{pageSession.microprofileConfigMap['tomlOrdinality']}"/>
         </sun:property>
 
         <sun:property id="serverOrdinalProp" labelAlign="left" noWrap="#{true}" overlapLabel="#{false}" 

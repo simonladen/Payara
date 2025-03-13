@@ -1,14 +1,14 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) 2016-2021 Payara Foundation and/or its affiliates. All rights reserved.
+ * Copyright (c) [2016-2024] Payara Foundation and/or its affiliates. All rights reserved.
  *
  * The contents of this file are subject to the terms of either the GNU
  * General Public License Version 2 only ("GPL") or the Common Development
  * and Distribution License("CDDL") (collectively, the "License").  You
  * may not use this file except in compliance with the License.  You can
  * obtain a copy of the License at
- * https://github.com/payara/Payara/blob/master/LICENSE.txt
+ * https://github.com/payara/Payara/blob/main/LICENSE.txt
  * See the License for the specific
  * language governing permissions and limitations under the License.
  *
@@ -39,8 +39,7 @@
  */
 package fish.payara.nucleus.healthcheck.stuck;
 
-import fish.payara.nucleus.healthcheck.HealthCheckStatsProvider;
-import fish.payara.nucleus.healthcheck.HealthCheckResult;
+import fish.payara.internal.notification.EventLevel;
 import fish.payara.monitoring.collect.MonitoringData;
 import fish.payara.monitoring.collect.MonitoringDataCollector;
 import fish.payara.monitoring.collect.MonitoringDataSource;
@@ -48,28 +47,29 @@ import fish.payara.monitoring.collect.MonitoringWatchCollector;
 import fish.payara.monitoring.collect.MonitoringWatchSource;
 import fish.payara.notification.healthcheck.HealthCheckResultEntry;
 import fish.payara.notification.healthcheck.HealthCheckResultStatus;
+import fish.payara.nucleus.healthcheck.HealthCheckResult;
+import fish.payara.nucleus.healthcheck.HealthCheckStatsProvider;
 import fish.payara.nucleus.healthcheck.HealthCheckStuckThreadExecutionOptions;
-import fish.payara.nucleus.healthcheck.preliminary.BaseHealthCheck;
 import fish.payara.nucleus.healthcheck.configuration.StuckThreadsChecker;
+import fish.payara.nucleus.healthcheck.preliminary.BaseHealthCheck;
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
+import org.glassfish.api.StartupRunLevel;
+import org.glassfish.hk2.runlevel.RunLevel;
+import org.jvnet.hk2.annotations.Service;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
-import jakarta.annotation.PostConstruct;
-import jakarta.inject.Inject;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import org.glassfish.api.StartupRunLevel;
-import org.glassfish.hk2.runlevel.RunLevel;
-import org.jvnet.hk2.annotations.Service;
 
 /**
  * @since 4.1.2.173
@@ -141,6 +141,14 @@ public class StuckThreadsHealthCheck extends
     }
 
     @Override
+    protected EventLevel createNotificationEventLevel (HealthCheckResultStatus checkResult) {
+        if (checkResult == HealthCheckResultStatus.FINE) {
+            return EventLevel.INFO;
+        }
+        return EventLevel.WARNING;
+    }
+
+    @Override
     @MonitoringData(ns = "health", intervalSeconds = 4)
     public void collect(MonitoringDataCollector collector) {
         if (options == null || !options.isEnabled()) {
@@ -204,17 +212,22 @@ public class StuckThreadsHealthCheck extends
         long thresholdInMillis = getThresholdInMillis();
         long now = System.currentTimeMillis();
         ConcurrentHashMap<Long, Long> threads = stuckThreadsStore.getThreads();
-        for (Entry<Long, Long> thread : threads.entrySet()){
+        String[] blacklist = checker.getBlacklistPatterns().split(",");
+        for (Entry<Long, Long> thread : threads.entrySet()) {
             Long threadId = thread.getKey();
             long workStartedTime = thread.getValue();
             long timeWorkingInMillis = now - workStartedTime;
             if (timeWorkingInMillis > thresholdInMillis){
                 ThreadInfo info = bean.getThreadInfo(threadId, Integer.MAX_VALUE);
-                if (info != null){ //check thread hasn't died already
+                if (info != null && !isInBlacklist(info.getThreadName(), blacklist)){ //check thread hasn't died already
                     consumer.accept(workStartedTime, timeWorkingInMillis, thresholdInMillis, info);
                 }
             }
         }
+    }
+
+    private boolean isInBlacklist(String threadName, String[] blacklistPatterns) {
+        return Arrays.stream(blacklistPatterns).anyMatch(threadName::matches);
     }
 
     private long getThresholdInMillis() {
@@ -226,7 +239,7 @@ public class StuckThreadsHealthCheck extends
     public HealthCheckStuckThreadExecutionOptions constructOptions(StuckThreadsChecker checker) {
         return new HealthCheckStuckThreadExecutionOptions(Boolean.valueOf(checker.getEnabled()),
                 Long.parseLong(checker.getTime()), asTimeUnit(checker.getUnit()), Boolean.valueOf(checker.getAddToMicroProfileHealth()),
-                Long.parseLong(checker.getThreshold()), asTimeUnit(checker.getThresholdTimeUnit()));
+                Long.parseLong(checker.getThreshold()), asTimeUnit(checker.getThresholdTimeUnit()), checker.getBlacklistPatterns());
     }
 
     @Override

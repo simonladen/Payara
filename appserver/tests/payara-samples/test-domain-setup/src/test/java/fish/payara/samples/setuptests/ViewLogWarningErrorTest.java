@@ -1,14 +1,14 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) 2020 Payara Foundation and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020-2023 Payara Foundation and/or its affiliates. All rights reserved.
  *
  * The contents of this file are subject to the terms of either the GNU
  * General Public License Version 2 only ("GPL") or the Common Development
  * and Distribution License("CDDL") (collectively, the "License").  You
  * may not use this file except in compliance with the License.  You can
  * obtain a copy of the License at
- * https://github.com/payara/Payara/blob/master/LICENSE.txt
+ * https://github.com/payara/Payara/blob/main/LICENSE.txt
  * See the License for the specific
  * language governing permissions and limitations under the License.
  *
@@ -88,6 +88,11 @@ public class ViewLogWarningErrorTest {
             if (startupLine) {
                 // Flag a warning if found
                 if (line.contains("WARNING") || line.contains("ERROR")) {
+                    // Skip Hazelcast warnings about extended socket options for Windows
+                    if (log.get(log.indexOf(line) + 1).contains("It seems your JDK does not support jdk.net.ExtendedSocketOptions on this OS")) {
+                        continue;
+                    }
+
                     warningFound = true;
                     printLine = true;
                 }

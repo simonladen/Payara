@@ -55,7 +55,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// Portions Copyright [2016-2022] [Payara Foundation and/or its affiliates]
+// Portions Copyright 2016-2024 Payara Foundation and/or its affiliates
 
 package org.apache.catalina.core;
 
@@ -207,8 +207,6 @@ import org.glassfish.web.valve.GlassFishValve;
  * @author Remy Maucherat
  * @version $Revision: 1.48 $ $Date: 2007/07/25 00:52:04 $
  */
-
-// Portions Copyright [2016-2021] [Payara Foundation and/or its affiliates]
 
 public class StandardContext
     extends ContainerBase
@@ -2305,9 +2303,9 @@ public class StandardContext
         Wrapper oldJspServlet = null;
 
         // Allow webapp to override JspServlet inherited from global web.xml.
-        boolean isJspServlet = "jsp".equals(wrapperName);
+        boolean isJspServlet = Constants.JSP_SERVLET_NAME.equals(wrapperName);
         if (isJspServlet) {
-            oldJspServlet = (Wrapper) findChild("jsp");
+            oldJspServlet = (Wrapper) findChild(Constants.JSP_SERVLET_NAME);
             if (oldJspServlet != null) {
                 removeChild(oldJspServlet);
             }
@@ -3240,7 +3238,7 @@ public class StandardContext
     public void addJspMapping(String pattern) {
         String servletName = findServletMapping("*.jsp");
         if (servletName == null) {
-            servletName = "jsp";
+            servletName = Constants.JSP_SERVLET_NAME;
         }
 
         if( findChild(servletName) != null) {
@@ -5756,6 +5754,9 @@ public class StandardContext
 
             // Start ContainerBackgroundProcessor thread
             super.threadStart();
+            // Start ContainerBackgroundSessionProcessor thread
+            super.threadSessionStart();
+            
 
             // Configure and call application filters
             filterStart();
@@ -5765,6 +5766,8 @@ public class StandardContext
         } catch (Throwable t) {
             log.log(Level.SEVERE, LogFacade.STARTUP_CONTEXT_FAILED_EXCEPTION, getName());
             try {
+                // ensure that all JSP resources are released in stop() method below
+                forceLoadJspServlet();
                 stop();
             } catch (Throwable tt) {
                 log.log(Level.SEVERE, LogFacade.CLEANUP_FAILED_EXCEPTION, tt);
@@ -5945,10 +5948,16 @@ public class StandardContext
 
             // Stop ContainerBackgroundProcessor thread
             super.threadStop();
+            // Stop ContainerBackgroundSessionProcessor thread
+            super.threadSessionStop();
 
             if ((manager != null) && (manager instanceof Lifecycle)) {
                 if(manager instanceof StandardManager) {
-                    ((StandardManager)manager).stop(isShutdown);
+                    try {
+                        ((StandardManager)manager).stop(isShutdown);
+                    } catch (LifecycleException e) {
+                        log.log(Level.INFO, e.getMessage());
+                    }
                 } else {
                     ((Lifecycle)manager).stop();
                 }
@@ -6190,6 +6199,23 @@ public class StandardContext
             }
         }
         // END S1AS8PE 4965017
+    }
+
+    /**
+     * Execute periodic task to get last values added on the session storage, those values 
+     * can be added by another instance on the cluster.
+     */
+    @Override
+    public void backgroundSessionUpdate() {
+        if ((getManager() != null)) {
+            if (getManager() instanceof StandardManager) {
+                ((StandardManager) getManager()).processExpires();
+            } else if (getManager() instanceof PersistentManagerBase) {
+                PersistentManagerBase pManager =
+                        (PersistentManagerBase) getManager();
+                pManager.backgroundSessionUpdate();
+            }
+        }
     }
 
 
@@ -8111,5 +8137,21 @@ public class StandardContext
             return ((WebappClassLoader)cl).getExtractedResourcePath(path);
         }
         return null;
+    }
+
+
+    /**
+     * Force loading of the JSP servlet. This is needed in case of
+     * initialization failure, so the JSP servlet would be unloaded properly
+     * and release all of its resources
+     *
+     * @throws ServletException
+     */
+    private void forceLoadJspServlet() throws ServletException {
+        Container jspServlet = findChild(Constants.JSP_SERVLET_NAME);
+        if (jspServlet instanceof Wrapper) {
+            Wrapper jspServletWrapper = (Wrapper) jspServlet;
+            jspServletWrapper.load();
+        }
     }
 }
