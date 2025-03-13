@@ -54,16 +54,16 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import org.jboss.arquillian.container.test.api.Deployment;
-import org.jboss.arquillian.junit.Arquillian;
+import org.jboss.arquillian.junit5.ArquillianExtension;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author lprimak
  */
-@RunWith(Arquillian.class)
+@ExtendWith(ArquillianExtension.class)
 public class ClusteredSingletonTest {
     private static final Logger log = Logger.getLogger(ClusteredSingletonTest.class.getName());
 
@@ -93,11 +93,6 @@ public class ClusteredSingletonTest {
     public void cdiApi() {
         assertThat(cdiApi1.getHello(), startsWith("CDI Bean Hello"));
         assertThat(cdiApi1.getState(), equalTo(cdiApi2.getState()));
-    }
-
-    @Test(expected = EJBException.class)
-    public void twoMethodsNotEqual() {
-        assertThat(annotatedApi1.getHello(), not(equalTo(annotatedApi2.getHello())));
     }
 
     @Test

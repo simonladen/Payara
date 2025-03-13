@@ -48,25 +48,25 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import org.jboss.arquillian.container.test.api.Deployment;
-import org.jboss.arquillian.junit.Arquillian;
+import org.jboss.arquillian.junit5.ArquillianExtension;
 import org.jboss.arquillian.test.api.ArquillianResource;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author Andrew Pielage
  */
-@RunWith(Arquillian.class)
+@ExtendWith(ArquillianExtension.class)
 public class ClusteredSingletonEjbTest {
 
     @ArquillianResource
     private URL base;
 
-    private WebClient webClient;
+    static private WebClient webClient;
 
     @Deployment(testable = false)
     public static WebArchive createDeployment() {
@@ -75,8 +75,8 @@ public class ClusteredSingletonEjbTest {
                 .addAsWebInfResource(new File("src/main/webapp", "WEB-INF/web.xml"));
     }
 
-    @Before
-    public void setup() {
+    @BeforeAll
+    static public void setup() {
         webClient = new WebClient();
     }
 
@@ -86,6 +86,6 @@ public class ClusteredSingletonEjbTest {
     @Test
     public void testLocalPostConstruct() throws IOException {
         TextPage page = webClient.getPage(base + "hello");
-        Assert.assertEquals("Hello Anon", page.getContent());
+        Assertions.assertEquals("Hello Anon", page.getContent());
     }
 }

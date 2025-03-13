@@ -46,15 +46,16 @@ import java.util.logging.Logger;
 import jakarta.ejb.Singleton;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.container.test.api.ShouldThrowException;
+import org.jboss.arquillian.junit5.ArquillianExtension;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author lprimak
  */
-@RunWith(PayaraArquillianTestRunner.class)
+@ExtendWith(ArquillianExtension.class)
 @NotMicroCompatible
 public class NonSerializableDeploymentFailTest {
     private static final Logger log = Logger.getLogger(NonSerializableDeploymentFailTest.class.getName());
