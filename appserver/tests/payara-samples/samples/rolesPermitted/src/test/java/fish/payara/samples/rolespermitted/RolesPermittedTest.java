@@ -44,7 +44,6 @@ import static fish.payara.samples.rolespermitted.IdentityStoreTest.PASSWORD;
 import static fish.payara.samples.rolespermitted.IdentityStoreTest.STANDARD_USER;
 import static java.lang.String.format;
 import static jakarta.json.JsonValue.NULL;
-import org.junit.jupiter.api.Assertions;
 
 import java.io.File;
 import java.net.URL;

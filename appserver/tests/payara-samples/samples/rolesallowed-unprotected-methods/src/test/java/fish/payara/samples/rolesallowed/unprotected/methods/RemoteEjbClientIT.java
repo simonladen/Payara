@@ -42,8 +42,8 @@ package fish.payara.samples.rolesallowed.unprotected.methods;
 import fish.payara.samples.NotMicroCompatible;
 import fish.payara.samples.PayaraArquillianTestRunner;
 import java.net.URI;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import jakarta.ejb.EJBAccessException;
 import javax.naming.Context;
@@ -54,14 +54,15 @@ import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.test.api.ArquillianResource;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.jboss.arquillian.junit5.ArquillianExtension;
 
 /**
  * Test that verifies the automatic propagation of baggage items across process boundaries when using Remote EJBs.
  *
  * @author Andrew Pielage <andrew.pielage@payara.fish>
  */
-@RunWith(PayaraArquillianTestRunner.class)
+@ExtendWith(ArquillianExtension.class)
 @NotMicroCompatible
 public class RemoteEjbClientIT {
     @ArquillianResource
@@ -88,11 +89,11 @@ public class RemoteEjbClientIT {
                     uri.getPath()));
 
             System.out.println(ejb.sayHello());
-            Assert.assertTrue(ejb.sayHello().equalsIgnoreCase("Hello Anonymous!"));
+            Assertions.assertTrue(ejb.sayHello().equalsIgnoreCase("Hello Anonymous!"));
         } catch (NamingException ne) {
             // Print the exception, so we know, where it failed
             ne.printStackTrace();
-            Assert.fail("Failed performing lookup:\n" + ne.getCause());
+            Assertions.fail("Failed performing lookup:\n" + ne.getCause());
         }
     }
 
@@ -112,12 +113,12 @@ public class RemoteEjbClientIT {
             try {
                 // Should fail
                 System.out.println(ejb.secureSayHello());
-                Assert.fail("Managed to access secured method without being authenticated");
+                Assertions.fail("Managed to access secured method without being authenticated");
             } catch (EJBAccessException ejbAccessException) {
                 System.out.println("Successfully prevented from accessing method without being authenticated");
             }
         } catch (NamingException ne) {
-            Assert.fail("Failed performing lookup:\n" + ne.getCause());
+            Assertions.fail("Failed performing lookup:\n" + ne.getCause());
         }
     }
 
@@ -135,11 +136,10 @@ public class RemoteEjbClientIT {
             ProtectedHelloServiceRemote ejb = (ProtectedHelloServiceRemote) context.lookup(String.format(
                     "java:global%sProtectedHelloServiceBean!fish.payara.samples.rolesallowed.unprotected.methods.ProtectedHelloServiceRemote",
                     uri.getPath()));
-            Assert.fail("Managed to access fully-secured EJB without being authenticated");
+            Assertions.fail("Managed to access fully-secured EJB without being authenticated");
         } catch (NamingException ne) {
-            Assert.assertTrue("Lookup seems to have failed for an unexpected reason. " +
-                            "Expected message to contain \"CORBA NO_PERMISSION\"",
-                    ne.toString().contains("CORBA NO_PERMISSION"));
+            Assertions.assertTrue(ne.toString().contains("CORBA NO_PERMISSION"), "Lookup seems to have failed for an unexpected reason. " +
+                            "Expected message to contain \"CORBA NO_PERMISSION\"");
         }
     }
 
