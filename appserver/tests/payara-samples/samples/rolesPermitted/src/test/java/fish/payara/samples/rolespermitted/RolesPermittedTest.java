@@ -44,10 +44,7 @@ import static fish.payara.samples.rolespermitted.IdentityStoreTest.PASSWORD;
 import static fish.payara.samples.rolespermitted.IdentityStoreTest.STANDARD_USER;
 import static java.lang.String.format;
 import static jakarta.json.JsonValue.NULL;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.File;
 import java.net.URL;
@@ -66,18 +63,19 @@ import org.jboss.arquillian.junit.InSequence;
 import org.jboss.arquillian.test.api.ArquillianResource;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import fish.payara.samples.PayaraArquillianTestRunner;
+import org.jboss.arquillian.junit5.ArquillianExtension;
 
 /**
  *
  * @author Susan Rai
  */
-@RunWith(PayaraArquillianTestRunner.class)
+@ExtendWith(ArquillianExtension.class)
 public class RolesPermittedTest {
 
     private static final String WEBAPP_SOURCE = "src/main/webapp";
@@ -95,7 +93,7 @@ public class RolesPermittedTest {
                 .addAsWebInfResource(new File(WEBAPP_SOURCE, "WEB-INF/glassfish-web.xml"));
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws InterruptedException {
         WEB_CLIENT = new WebClient();
         //prevent spurious 404 errors
@@ -107,7 +105,7 @@ public class RolesPermittedTest {
     @RunAsClient
     public void testAuthenticationWithInvalidUser() {
         WebResponse result = getResponse("wrongUser", PASSWORD);
-        assertEquals(401, result.getStatusCode());
+        Assertions.assertEquals(401, result.getStatusCode());
     }
 
     @Test
@@ -115,9 +113,9 @@ public class RolesPermittedTest {
     @InSequence(1)
     public void testAuthenticationWithAdminUser() {
         JsonObject result = getJsonResponse(ADMIN_USER, PASSWORD);
-        assertNotNull("Invalid response", result);
-        assertTrue("User doesn't have the correct role", result.getBoolean("payaraAdmin"));
-        assertEquals(1, result.getInt("counter"));
+        Assertions.assertNotNull(result, "Invalid response");
+        Assertions.assertTrue(result.getBoolean("payaraAdmin"), "User doesn't have the correct role");
+        Assertions.assertEquals(1, result.getInt("counter"));
     }
 
     @Test
@@ -125,18 +123,18 @@ public class RolesPermittedTest {
     @InSequence(2)
     public void testAdminUserSession() {
         JsonObject result = getJsonResponse(ADMIN_USER, PASSWORD);
-        assertNotNull("Invalid response", result);
-        assertTrue("User doesn't have the correct role", result.getBoolean("payaraAdmin"));
-        assertEquals(2, result.getInt("counter"));
+        Assertions.assertNotNull(result,"Invalid response");
+        Assertions.assertTrue(result.getBoolean("payaraAdmin"), "User doesn't have the correct role");
+        Assertions.assertEquals(2, result.getInt("counter"));
     }
 
     @Test
     @RunAsClient
     public void testAuthenticationWithStandardUser() {
         JsonObject result = getJsonResponse(STANDARD_USER, PASSWORD);
-        assertNotNull("Invalid response", result);
-        assertFalse("User doesn't have the correct role", result.getBoolean("payaraAdmin"));
-        assertEquals(NULL, result.get("counter"));
+        Assertions.assertNotNull(result,"Invalid response");
+        Assertions.assertFalse(result.getBoolean("payaraAdmin"), "User doesn't have the correct role");
+        Assertions.assertEquals(NULL, result.get("counter"));
     }
 
     private JsonObject getJsonResponse(String username, String password) {
@@ -163,7 +161,7 @@ public class RolesPermittedTest {
         return null;
     }
 
-    @AfterClass
+    @AfterAll
     public static void cleanUp() {
         WEB_CLIENT.getCookieManager().clearCookies();
         WEB_CLIENT.close();
